@@ -65,10 +65,15 @@ import Base from '../layouts/Base.astro';
       // Vascular hierarchy: 4 trunks with character (some enter from off-canvas top sides
       // and curve inward); each branches into 2 arterioles, then a spread of capillaries.
       const TRUNKS = [
-        { entryX: -30,        branchX: W * 0.20, sway:  32, palette: 'red'  },
-        { entryX: W * 0.36,   branchX: W * 0.42, sway:  18, palette: 'blue' },
-        { entryX: W * 0.64,   branchX: W * 0.58, sway: -18, palette: 'red'  },
-        { entryX: W + 30,     branchX: W * 0.80, sway: -32, palette: 'blue' },
+        // Pair 1 (left) — artery + vein curving in from the top-left
+        { entryX: -28,        branchX: W * 0.14, sway:  32, palette: 'red'  },
+        { entryX: -8,         branchX: W * 0.24, sway:  28, palette: 'blue' },
+        // Pair 2 (center) — nearly vertical with a gentle parallel S-bend
+        { entryX: W * 0.46,   branchX: W * 0.46, sway:  16, palette: 'red'  },
+        { entryX: W * 0.55,   branchX: W * 0.55, sway:  16, palette: 'blue' },
+        // Pair 3 (right) — artery + vein curving in from the top-right
+        { entryX: W + 8,      branchX: W * 0.76, sway: -28, palette: 'red'  },
+        { entryX: W + 28,     branchX: W * 0.86, sway: -32, palette: 'blue' },
       ];
       const ARTERIOLE_OFFSET = 48;
       const CAPILLARY_SPREAD = 70;
