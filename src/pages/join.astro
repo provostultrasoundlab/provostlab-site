@@ -1,7 +1,91 @@
 ---
 import Base from '../layouts/Base.astro';
+const base = import.meta.env.BASE_URL.replace(/\/$/, '') + '/';
 ---
 <Base title="Join our Team — Provost Ultrasound Lab">
   <h1>Join our Team</h1>
-  <p><em>Content to be ported from the current site.</em></p>
+
+  <div class="intro">
+    <img class="team-photo" src={`${base}join/team.jpg`} alt="Provost Ultrasound Lab team at the end-of-year dinner" loading="lazy" />
+    <div class="intro-text">
+      <h2>Interested in pushing the boundaries of biomedical imaging?</h2>
+      <p>
+        We're always looking for passionate and curious students who want to tackle challenging problems at the intersection of ultrasound physics, artificial intelligence, and translational medicine. Our lab is highly collaborative and multidisciplinary — you don't need to be an expert in everything, but you should be excited to learn and work across fields.
+      </p>
+    </div>
+  </div>
+
+  <h2>Before reaching out:</h2>
+  <p>
+    Take some time to explore our <a href={`${base}research`}>research</a>. Read one of our <a href={`${base}publications`}>recent papers</a>, watch a <a href={`${base}publications/videos`}>video</a> to get a sense of what we do and see if it resonates with you. Does the idea of developing new imaging technologies or discovering disease biomarkers excite you? Can you see yourself contributing to this work?
+  </p>
+
+  <h2>Ready to apply?</h2>
+  <p>
+    Send Professor Provost a short <a href="mailto:jean.provost@polymtl.ca">email</a> (a few paragraphs is perfect) telling us:
+  </p>
+  <ul>
+    <li>What interests you about our research</li>
+    <li>What skills or experiences you'd bring to the lab</li>
+    <li>What you hope to learn or accomplish</li>
+  </ul>
+  <p>
+    Please attach your CV and, if you're comfortable sharing, your most recent transcripts or grades. This helps us identify scholarship opportunities you might be eligible for and find projects that match your background and interests — it's about finding the right fit for everyone.
+  </p>
+
+  <h2>We value:</h2>
+  <ul>
+    <li>Curiosity and creativity over perfect grades</li>
+    <li>Diverse backgrounds and perspectives</li>
+    <li>Clear communication and teamwork</li>
+    <li>Determination to solve hard problems</li>
+  </ul>
+  <p>
+    We're committed to creating an inclusive environment where all team members can thrive. If you're excited about our work, we want to hear from you.
+  </p>
+
+  <style>
+    h1 {
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 28px;
+      margin-bottom: 0;
+    }
+    h1::after {
+      content: '';
+      display: block;
+      width: 60%;
+      max-width: 280px;
+      height: 3px;
+      background: var(--accent);
+      margin: 8px auto 0;
+    }
+    .intro {
+      display: grid;
+      grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+      gap: 28px;
+      align-items: start;
+      margin-top: 32px;
+    }
+    @media (max-width: 640px) {
+      .intro { grid-template-columns: 1fr; }
+    }
+    .team-photo {
+      width: 100%;
+      height: auto;
+      border-radius: 10px;
+      display: block;
+    }
+    .intro-text h2 { margin-top: 0; }
+    h2 {
+      color: var(--accent-dark);
+      font-size: 19px;
+      margin-top: 28px;
+      border: none;
+      padding: 0;
+    }
+    p { margin: 8px 0; }
+    a { color: var(--accent); }
+  </style>
 </Base>
