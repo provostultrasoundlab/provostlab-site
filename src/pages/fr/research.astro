@@ -1,7 +1,115 @@
 ---
 import Base from '../../layouts/Base.astro';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '') + '/';
+const fig = (f) => `${base}research/${f}`;
+
+const intro = {
+  heading: 'Microscopie de localisation ultrasonore dynamique',
+  body: [
+    "La microscopie par localisation ultrasonore (ULM) suit les microbulles injectées individuelles circulant dans les vaisseaux sanguins pour créer des images super-résolues de la microvascularisation et mesurer les vitesses d'écoulement moyennes.",
+    "La microscopie par localisation ultrasonore dynamique — développée par notre laboratoire — étend ces capacités de plusieurs manières importantes. En mesurant les changements du flux sanguin tout au long du cycle cardiaque, la DULM peut visualiser les capillaires individuels dans le cerveau, et son suivi temporel du mouvement rend l'imagerie possible dans les organes en mouvement comme le cœur battant — auparavant inaccessibles à l'ULM. Cela fournit des biomarqueurs potentiellement cliniquement significatifs comme le temps de transit capillaire et la pulsatilité qui reflètent la santé microvasculaire, transformant l'ULM en une plateforme fonctionnelle pour détecter et surveiller les maladies.",
+  ],
+};
+
+const sections = [
+  {
+    title: 'Applications',
+    items: [
+      { image: 'pulsatility-imaging.gif', title: 'Imagerie de la pulsatilité', body: "L'augmentation de la pulsatilité dans les petits vaisseaux est un signe précoce de maladies neurodégénératives. L'imagerie traditionnelle ne visualise la pulsatilité que dans les grandes artères — nous pouvons maintenant la mesurer dans des vaisseaux aussi petits que 30 μm." },
+      { image: 'single-capillary-reporters.gif', title: 'Rapporteurs capillaires uniques', body: "Le blocage capillaire et le ralentissement du temps de transit surviennent dans la neuroinflammation, la maladie d'Alzheimer et les accidents vasculaires cérébraux, mais identifier où ces changements se produisent a été impossible jusqu'à présent. Pour la première fois, nous pouvons cartographier cela à travers l'ensemble du cerveau de manière non invasive, identifiant précisément quelles régions et quels capillaires spécifiques présentent un dysfonctionnement — essentiel pour comprendre les mécanismes pathologiques et surveiller les traitements." },
+      { image: 'myocardial-ultrasound-localization-angio.gif', title: 'Angiographie ultrasonore intramyocardique par localisation', body: "Les vaisseaux sanguins contenus dans la paroi cardiaque ne peuvent être imagés directement et individuellement, alors que leur dysfonctionnement est présent dans plus de 50 % des patients présentant une angine stable. Nous avons été en mesure de démontrer la faisabilité de cartographier ces vaisseaux dans le cœur battant et nous travaillons vers une translation clinique." },
+      { image: 'brain-therapy-and-monitoring.png', title: 'Application et suivi de thérapies cérébrales ultrasonores', body: "La manipulation de la vascularisation par ultrasons pour obtenir des bioeffets tels que l'ouverture de la barrière hémato-encéphalique prend de l'ampleur, mais les méthodes de surveillance chez les petits animaux demeurent principalement limitées à l'imagerie par résonance magnétique. Nous travaillons au développement de solutions basées sur les ultrasons pour faciliter la recherche sur de plus grandes populations animales." },
+    ],
+  },
+  {
+    title: 'Développements techniques',
+    items: [
+      { image: 'transcranial-imaging.gif', title: 'Imagerie transcrânienne', body: "Les ultrasons peuvent se propager en profondeur dans les tissus mais sont limités par les os en général et le crâne en particulier, qui nécessite souvent des craniotomies dans les études sur petits animaux et limite la translation chez l'humain. Nous avons récemment développé plusieurs nouvelles approches de correction d'aberration qui sont robustes et reproductibles." },
+      { image: 'particle-tracking.gif', title: 'Suivi de particules', body: "La microscopie par localisation ultrasonore dynamique nécessite le suivi d'un grand nombre de microbulles. Nous développons de nouvelles approches pour suivre davantage de microbulles, en présence de concentrations plus élevées et pour des durées plus longues, afin de permettre le développement de nouveaux biomarqueurs." },
+      { image: '3d-imaging.gif', title: 'Imagerie 3D', body: "L'imagerie ultrasonore ultrarapide 3D représente un défi d'ingénierie complexe car le nombre requis d'éléments piézoélectriques (et donc le coût et les ensembles de données) croît de manière quadratique. Nous travaillons sur plusieurs approches basées sur de nouvelles architectures de sondes pour relever ce défi." },
+      { image: 'clinical-imaging.gif', title: 'Imagerie clinique', body: "Un avantage important de l'imagerie ultrasonore est que les méthodes développées pour l'imagerie chez les petits animaux sont facilement transposables chez l'humain, souvent en utilisant la même électronique. Lors du passage à la clinique, nous devons adapter nos méthodes ; nous avons développé de nouvelles approches pour améliorer considérablement la qualité d'image dans le cœur humain et pour traverser les crânes plus épais pour l'imagerie cérébrale." },
+      { image: 'simulations.gif', title: 'Simulations', body: "Nous développons des cadres de simulation hautement réalistes pour prédire comment le comportement des microbulles dans la microvascularisation affecte des centaines de milliers d'images ultrasonores et comment ces images peuvent être utilisées pour retrouver ledit comportement. De telles simulations impliquent des calculs à grande échelle généralement exécutés sur des architectures massivement parallèles." },
+      { image: 'deep-learning.png', title: 'Apprentissage profond', body: "Nous développons des méthodes d'apprentissage profond pour traiter nos images à diverses étapes, de la correction d'aberration à la détection et l'étiquetage des microbulles. Nous avons été pionniers dans l'utilisation de plusieurs composantes novatrices dans ces réseaux, telles que les réseaux creux ou à valeurs complexes." },
+    ],
+  },
+];
 ---
 <Base lang="fr" title="Recherche — Laboratoire d'ultrasons Provost">
   <h1>Recherche</h1>
-  <p><em>Section en cours de traduction.</em></p>
+
+  <section class="intro">
+    <h2>{intro.heading}</h2>
+    {intro.body.map((p) => <p>{p}</p>)}
+  </section>
+
+  {sections.map((sec) => (
+    <section>
+      <h2>{sec.title}</h2>
+      <div class="topic-grid">
+        {sec.items.map((it) => (
+          <div class="topic">
+            <img src={fig(it.image)} alt={it.title} loading="lazy" />
+            <h3>{it.title}</h3>
+            <p>{it.body}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  ))}
+
+  <style>
+    h1 {
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 28px;
+    }
+    section { margin-top: 40px; }
+    section > h2 {
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 17px;
+      color: var(--accent-dark);
+      border: none;
+      padding: 0;
+      margin: 0 0 22px;
+    }
+    .intro {
+      max-width: 760px;
+      margin-left: auto;
+      margin-right: auto;
+      text-align: center;
+    }
+    .intro p { text-align: left; }
+    .topic-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 36px 30px;
+    }
+    .topic { text-align: center; }
+    .topic img {
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+      display: block;
+    }
+    .topic h3 {
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-size: 14px;
+      color: var(--accent-dark);
+      margin: 14px 0 8px;
+    }
+    .topic p {
+      text-align: left;
+      font-size: 14px;
+      margin: 0;
+      color: var(--ink);
+    }
+    @media (max-width: 640px) {
+      .topic-grid { grid-template-columns: 1fr; }
+    }
+  </style>
 </Base>
