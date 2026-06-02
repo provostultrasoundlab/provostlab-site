@@ -1,7 +1,116 @@
 ---
 import Base from '../../layouts/Base.astro';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '') + '/';
+const slug = (s) => s.split(',')[0].normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase();
+
+const team = [
+  { name: 'Jean Provost, Ph.D., ing.', body: "Professeur, Département de génie physique. Boursier de recherche FRQS. Professeur IVADO. Membre de l'Institut de Cardiologie de Montréal, de l'Institut de génie biomédical UdeM/Polytechnique, d'IVADO, de TransMedTech, du Collège des évaluateurs des IRSC, IEEE (Senior), et du Verasonics Scientific Advisory Board. Professeur à Polytechnique Montréal depuis 2018 ; enseigne GBM3805 Physique Moderne pour le Génie Biomédical et PHS3910 Techniques Expérimentales." },
+  { name: 'Jonathan Porée, Ph.D.', body: "Associé de recherche, responsable de notre plateforme mobile d'imagerie et de thérapie ultrasonores TransMedTech. La plateforme offre le développement et le déploiement sur site d'outils d'imagerie et de thérapie ultrasonores ultrarapides, adaptés aux besoins spécifiques des chercheurs et des fabricants. Ses intérêts de recherche sont larges mais se concentrent actuellement sur le développement de l'angiographie myocardique par localisation ultrasonore dans le cœur battant et la microscopie de localisation ultrasonore transcrânienne. Bourses de IVADO, TransMedTech." },
+  { name: 'Stephen A. Lee, Ph.D.', body: "Chercheur postdoctoral. Ses principaux domaines de recherche comprennent les simulations et les rapporteurs capillaires uniques, ainsi que leur utilisation pour améliorer notre compréhension des processus neurovasculaires dans la neurodégénérescence et les accidents vasculaires cérébraux." },
+  { name: 'Nin Ghigo, Ph.D.', body: "Chercheur postdoctoral. Ses principaux intérêts de recherche incluent l'imagerie de pulsatilité et les collaborations industrielles et gouvernementales." },
+  { name: 'Paul Xing', body: "Candidat au doctorat. Ses principaux intérêts de recherche incluent l'imagerie transcrânienne et la correction d'aberration. Bourses du CRSNG, FRQ, TransMedTech." },
+  { name: 'Oleksandra Gulenko', body: "Candidate au doctorat, codirigée par le Pr Jean Provost et le Dr Abbas Sadikot (McGill). Ses recherches visent à étudier les changements de la vascularisation cérébrale associés aux thérapies cérébrales basées sur les ultrasons, telles que l'ouverture de la barrière hémato-encéphalique. Bourses de FRQ, TransMedTech." },
+  { name: 'Alice Wu', body: "Candidate au doctorat, codirigée par le Pr Jean Provost et le Dr Michaël Chassé (CHUM). Ses recherches portent sur le développement de la microscopie de localisation ultrasonore dynamique (DULM) appliquée à l'imagerie cérébrale 3D, afin d'étudier l'hémodynamique du cerveau au cours du cycle cardiaque. Bourses de FRQ, TransMedTech." },
+  { name: 'Alexis Leconte', body: "Candidat au doctorat, codirigé par le Pr Jean Provost et le Dr Jean-Claude Tardif (Institut de Cardiologie de Montréal). Ses recherches portent sur le développement de la microscopie par localisation ultrasonore (ULM) pour l'imagerie du myocarde, afin de visualiser et de quantifier le flux sanguin microvasculaire dans la paroi du cœur en mouvement. Bourses de FRQ, TransMedTech." },
+  { name: 'Cai Jie', body: "Stagiaire. Développement d'une version 4D du suivi spatio-temporel. Bourse du CRSNG." },
+  { name: 'Marco Pontrelli', body: "Stagiaire. Travaille sur la correction d'aberration en transmission. Bourse du CRSNG." },
+  { name: 'Malo Rossetto', body: "Stagiaire. Travaille sur la représentation du réseau vasculaire cérébral sous forme de graphe à partir des trajectoires de microbulles." },
+  { name: 'Ludovic Goetz', body: "Stagiaire. Développe une méthode de correction des aberrations 3D en imagerie par sonde ligne-colonne, fondée sur une cartographie voxel par voxel de la vitesse apparente du son." },
+  { name: 'David Bracco, MD', body: "Collaborateur. Travaille sur l'imagerie haute fréquence de la vascularisation intramyocardique du cœur." },
+];
+
+const alumni = [
+  { name: 'Vincent Perrot, Ph.D.', body: "Chercheur postdoctoral, 2020–2022. Maintenant chercheur principal chez DarkVision." },
+  { name: 'Chloé Bourquin, Ph.D.', body: "Première (!) doctorante du Provostlab. Bourses de FRQ, TransMedTech. Maintenant journaliste à La Presse." },
+  { name: 'Brice Rauby, Ph.D.', body: "Membre du Mila, codirigé par le Pr Jean Provost et le Dr Maxime Gasse (Mila). Ses recherches portaient sur de nouvelles méthodes basées sur l'apprentissage profond pour la microscopie de localisation ultrasonore (ULM), avec un accent particulier sur l'extension tridimensionnelle et l'applicabilité in vivo. Bourses de IVADO, FRQ, TransMedTech. Maintenant chez SoundBlade Medical." },
+  { name: 'Samuel Desmarais, M.Sc.A.', body: "Maîtrise avec mémoire 2021–2023 ; stagiaire 2019–2021. Maintenant candidat au doctorat à TU Delft." },
+  { name: 'Olivier Caron, M.Sc.A.', body: "Maîtrise avec mémoire 2021–2023 ; stagiaire 2020–2021. Maintenant chargé d'étude à l'Atelier 7Hz." },
+  { name: 'Hatim Belgharbi, M.Sc.A.', body: "Maîtrise avec mémoire 2020–2021 ; stagiaire 2018–2019. Maintenant candidat au doctorat à UNC Chapel Hill." },
+  { name: 'Michael Mougharbel, M.Sc.A.', body: "Maîtrise avec mémoire 2021–2023. Maintenant ingénieur qualité à l'Institut de Cardiologie de Montréal." },
+  { name: 'Simon Blais, M.Sc.A.', body: "Maîtrise avec mémoire 2019–2020. Maintenant concepteur mécanique chez CLEIO." },
+  { name: 'Erwan Hardy, M.Sc.A.', body: "Maîtrise avec mémoire 2019–2020. Maintenant ingénieur R&D chez Quantel Medical." },
+  { name: 'Philippe Cormier, M.Sc.A.', body: "Maîtrise avec mémoire 2019–2020. Maintenant ingénieur R&D chez Puzzle Medical." },
+  { name: 'Simon Desrochers', body: "Stagiaire 2024." },
+  { name: 'Pierre-Olivier Bouchard', body: "Stagiaire 2024." },
+  { name: 'Louis Caron', body: "Stagiaire 2024." },
+  { name: 'Emma Gauvreau', body: "Stagiaire 2024." },
+  { name: 'Théodore Brierre', body: "Stagiaire 2024." },
+  { name: 'Michael Mayerhofer', body: "Stagiaire 2022–2024." },
+  { name: 'Baptiste Didier', body: "Stagiaire 2023." },
+  { name: 'Jean Ropert', body: "Stagiaire 2023." },
+  { name: 'Tim Whittaker', body: "Stagiaire 2022." },
+  { name: 'Aurélie Roseberry', body: "Stagiaire 2022." },
+  { name: 'Juliette Reydet', body: "Stagiaire 2022." },
+  { name: 'Léo Milecki', body: "Stagiaire 2019 ; scientifique invité 2022." },
+  { name: 'David Arsenault-Belley', body: "Stagiaire 2021." },
+  { name: 'Yangou Dou', body: "Stagiaire 2021." },
+  { name: 'Julie Lanthier', body: "Stagiaire 2021." },
+  { name: 'Thomas Ricard', body: "Stagiaire 2021." },
+  { name: 'Tom Quelin', body: "Stagiaire 2021." },
+  { name: 'Jacynthe Francoeur', body: "Stagiaire 2019–2020." },
+  { name: 'Élodie Labrecque Langlais', body: "Stagiaire 2020." },
+  { name: 'Jean-François Martin', body: "Stagiaire 2019–2020." },
+  { name: 'William Beaulieu', body: "Stagiaire 2020–2021." },
+  { name: 'Arthur Le Ber', body: "Stagiaire 2019." },
+  { name: 'Maxence Laplante-Berthier', body: "Stagiaire (2025–2026). A travaillé sur la validation des cartes de microscopie par localisation ultrasonore par comparaison avec des simulations. Bourses du CRSNG, UPIR." },
+  { name: 'Valentin Jourdan', body: "Stagiaire (2025–2026). A travaillé sur l'étiquetage automatique de la vascularisation par microscopie par localisation ultrasonore." },
+  { name: 'Naomi Babii', body: "Stagiaire (2025–2026). A travaillé sur la validation des cartes de microscopie par localisation ultrasonore par comparaison avec l'histologie. Bourses du CRSNG, UPIR, FRQ." },
+];
 ---
 <Base lang="fr" title="Membres — Laboratoire d'ultrasons Provost">
   <h1>Membres</h1>
-  <p><em>Section en cours de traduction.</em></p>
+
+  <h2>Équipe</h2>
+  <div class="people-grid">
+    {team.map((p) => (
+      <div class="person">
+        <img class="avatar" src={`${base}people/${slug(p.name)}.jpg?v=2`} alt={p.name} loading="lazy" />
+        <div class="person-name">{p.name}</div>
+        <p class="person-body">{p.body}</p>
+      </div>
+    ))}
+  </div>
+
+  <h2>Alumni</h2>
+  <div class="people-grid">
+    {alumni.map((p) => (
+      <div class="person">
+        <img class="avatar" src={`${base}people/${slug(p.name)}.jpg?v=2`} alt={p.name} loading="lazy" />
+        <div class="person-name">{p.name}</div>
+        <p class="person-body">{p.body}</p>
+      </div>
+    ))}
+  </div>
+
+  <style>
+    h2 {
+      color: var(--accent-dark);
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 6px;
+      margin-top: 36px;
+    }
+    .people-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 28px 24px;
+      margin-top: 18px;
+    }
+    .person { display: flex; flex-direction: column; }
+    .avatar {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      border-radius: 12px;
+      background: #eef1f5;
+      display: block;
+    }
+    .person-name { font-weight: 600; margin-top: 10px; }
+    .person-body {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+  </style>
 </Base>

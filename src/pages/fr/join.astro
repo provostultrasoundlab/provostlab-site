@@ -1,7 +1,91 @@
 ---
 import Base from '../../layouts/Base.astro';
+const base = import.meta.env.BASE_URL.replace(/\/$/, '') + '/';
 ---
 <Base lang="fr" title="Rejoignez notre équipe — Laboratoire d'ultrasons Provost">
   <h1>Rejoignez notre équipe</h1>
-  <p><em>Section en cours de traduction.</em></p>
+
+  <div class="intro">
+    <img class="team-photo" src={`${base}join/team.jpg`} alt="L'équipe du Laboratoire d'ultrasons Provost au dîner de fin d'année" loading="lazy" />
+    <div class="intro-text">
+      <h2>Vous voulez repousser les frontières de l'imagerie biomédicale ?</h2>
+      <p>
+        Nous cherchons constamment des étudiants passionnés et curieux qui veulent s'attaquer à des problèmes stimulants à l'intersection de la physique des ultrasons, de l'intelligence artificielle et de la médecine translationnelle. Notre laboratoire est très collaboratif et multidisciplinaire — vous n'avez pas besoin d'être expert en tout, mais il faut avoir l'enthousiasme d'apprendre et de travailler entre les disciplines.
+      </p>
+    </div>
+  </div>
+
+  <h2>Avant de nous écrire :</h2>
+  <p>
+    Prenez le temps d'explorer notre <a href={`${base}fr/research`}>recherche</a>. Lisez un de nos <a href={`${base}fr/publications`}>articles récents</a>, regardez une <a href={`${base}fr/publications/videos`}>vidéo</a> pour vous faire une idée de ce que nous faisons et voir si cela résonne avec vous. L'idée de développer de nouvelles technologies d'imagerie ou de découvrir des biomarqueurs de maladies vous enthousiasme-t-elle ? Pouvez-vous vous imaginer contribuer à ce travail ?
+  </p>
+
+  <h2>Prêt à postuler ?</h2>
+  <p>
+    Envoyez au professeur Provost un court <a href="mailto:jean.provost@polymtl.ca">courriel</a> (quelques paragraphes suffisent) en nous disant :
+  </p>
+  <ul>
+    <li>Ce qui vous intéresse dans nos recherches</li>
+    <li>Les compétences ou expériences que vous apporteriez au laboratoire</li>
+    <li>Ce que vous espérez apprendre ou accomplir</li>
+  </ul>
+  <p>
+    Joignez votre CV et, si vous êtes à l'aise de les partager, vos relevés de notes les plus récents. Cela nous aide à identifier les bourses pour lesquelles vous pourriez être admissible et à trouver des projets qui correspondent à votre parcours et à vos intérêts — il s'agit de trouver la bonne adéquation pour tout le monde.
+  </p>
+
+  <h2>Nous valorisons :</h2>
+  <ul>
+    <li>La curiosité et la créativité plus que des notes parfaites</li>
+    <li>Les parcours et perspectives diversifiés</li>
+    <li>Une communication claire et l'esprit d'équipe</li>
+    <li>La détermination à résoudre des problèmes difficiles</li>
+  </ul>
+  <p>
+    Nous nous engageons à créer un environnement inclusif où tous les membres de l'équipe peuvent s'épanouir. Si vous êtes enthousiasmé par notre travail, nous voulons vous entendre.
+  </p>
+
+  <style>
+    h1 {
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 28px;
+      margin-bottom: 0;
+    }
+    h1::after {
+      content: '';
+      display: block;
+      width: 60%;
+      max-width: 280px;
+      height: 3px;
+      background: var(--accent);
+      margin: 8px auto 0;
+    }
+    .intro {
+      display: grid;
+      grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+      gap: 28px;
+      align-items: start;
+      margin-top: 32px;
+    }
+    @media (max-width: 640px) {
+      .intro { grid-template-columns: 1fr; }
+    }
+    .team-photo {
+      width: 100%;
+      height: auto;
+      border-radius: 10px;
+      display: block;
+    }
+    .intro-text h2 { margin-top: 0; }
+    h2 {
+      color: var(--accent-dark);
+      font-size: 19px;
+      margin-top: 28px;
+      border: none;
+      padding: 0;
+    }
+    p { margin: 8px 0; }
+    a { color: var(--accent); }
+  </style>
 </Base>
