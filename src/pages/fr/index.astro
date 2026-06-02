@@ -1,7 +1,358 @@
 ---
 import Base from '../../layouts/Base.astro';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '') + '/';
+const gifs = new Set(['news-03', 'news-16']);
+const versions = new Map([['paul-arxiv-2026', 4]]);
+const img = (n) => {
+  const ext = gifs.has(n) ? 'gif' : 'jpg';
+  const v = versions.get(n);
+  return `${base}news/${n}.${ext}${v ? `?v=${v}` : ''}`;
+};
+
+const news = [
+  {
+    date: 'Mai 2026',
+    title: "Nouvelle prépublication : Correction automatique des aberrations pour l'imagerie ultrasonore fonctionnelle et super-résolue transcrânienne chez les rongeurs et les primates non humains",
+    headshot: 'paul-xing',
+    images: ['paul-arxiv-2026'],
+    body: [
+      "Paul Xing et co-auteurs publient une nouvelle prépublication sur arXiv présentant une méthode automatique de correction d'aberrations transcrâniennes, appliquée à la fois à l'ultrason fonctionnel et à la microscopie par localisation ultrasonore chez les rongeurs et les primates non humains.",
+    ],
+    links: [{ label: 'Prépublication (arXiv)', url: 'https://doi.org/10.48550/ARXIV.2605.01538' }],
+  },
+  {
+    date: 'Février 2026',
+    title: 'Félicitations à Brice Rauby, Ph.D. !',
+    images: ['news-01'],
+    body: [
+      "Brice a brillamment soutenu sa thèse de doctorat portant sur l'application de l'apprentissage profond à la microscopie de localisation ultrasonore (ULM). Ses travaux incluent une revue complète et approfondie du domaine, ainsi que d'importantes avancées dans l'exploitation des structures parcimonieuses pour la reconstruction 3D en ULM.",
+      "Plus particulièrement, Brice a contribué à la création et à la mise à disposition publique du plus grand jeu de données in vivo en ULM à ce jour. S'appuyant sur cette réalisation, il a développé le premier modèle d'apprentissage profond entraîné directement sur des données ULM in vivo — une avancée majeure qui établit une nouvelle référence pour la communauté et ouvre des perspectives de recherche passionnantes.",
+      "Nous sommes extrêmement fiers des accomplissements de Brice et avons hâte de voir l'impact de ses travaux sur l'avenir de l'ULM et de l'imagerie biomédicale. Un grand merci également à Lucien Weiss, Hervé Lombaert, Hassan Rivaz et François Leduc-Primeau pour leurs questions pertinentes ainsi que pour les échanges dynamiques et stimulants lors de la soutenance.",
+    ],
+  },
+  {
+    date: 'Janvier 2026',
+    title: 'Nouvel article dans les PNAS avec une couverture par La Presse Canadienne',
+    video: { type: 'drive', id: '1lirSlbPQ1l5-OVJ-RE459jaBto18Sm1v' },
+    body: [
+      "Très heureux de partager que notre article vient d'être publié dans The Proceedings of the National Academy of Sciences (PNAS) !",
+      "Il devient de plus en plus évident que plusieurs neuropathologies sont associées à des changements microvasculaires dans le cerveau. À l'interface entre la microvascularisation et le système neuronal se trouvent de vastes réseaux de capillaires qui s'adaptent dynamiquement aux besoins énergétiques du cerveau. Pourtant, visualiser et évaluer fonctionnellement ces vaisseaux de manière non invasive à l'échelle de tout le cerveau demeure un défi.",
+      "Dans ce travail, nous présentons Single Capillary Reporters (SCaRe), une méthode permettant d'identifier les petits vaisseaux capillaires à l'aide de la microscopie de localisation ultrasonore, basée sur des acquisitions sans interruption, un filtrage spatio-temporel sur de longues séquences et une estimation d'état par modèles de Markov cachés (Hidden Markov Models). Nous montrons également comment des observations issues de simulations microvasculaires peuvent être transposées à des mesures in vivo de la neuroinflammation, ouvrant ainsi la voie à des études microvasculaires plus larges des troubles cérébraux.",
+      "Le travail a aussi été couvert par Polytechnique Montréal et par La Presse Canadienne, relayé par La Presse et CityNews. Un immense merci à mes coauteurs : Alexis Leconte, Alice Wu, Joshua Kinugasa, Gerardo Ramos Palacios, Jonathan Porée, Abbas Sadikot, Andreas Linninger et Jean Provost ; ainsi qu'à nos organismes subventionnaires : la Bourse postdoctorale des IRSC, la Bourse postdoctorale Vanier-Banting du CRSNG, et la Bourse postdoctorale TransMedTech de l'Institut TransMedTech de Montréal.",
+    ],
+    links: [
+      { label: 'Code (Zenodo)', url: 'https://zenodo.org/records/18065421' },
+      { label: 'Données (FRDR)', url: 'https://www.frdr-dfdr.ca/repo/dataset/efe60443-6b7d-4d22-a668-338e42c8dbb7' },
+      { label: 'Article Polytechnique Montréal', url: 'https://polymtl.info/JHrnu' },
+    ],
+  },
+  {
+    date: 'Décembre 2025',
+    title: "Dîner de fin d'année du laboratoire",
+    images: ['news-02'],
+    body: [
+      "Pour célébrer une année riche en succès, toute l'équipe s'est réunie pour notre traditionnel dîner de fin d'année. Ce fut une magnifique occasion de souligner le travail exceptionnel de chacun et de renforcer nos liens en dehors du laboratoire. Quelle belle manière de clôturer 2025 avant de nous plonger dans de nouveaux projets passionnants dès ce mois de janvier !",
+    ],
+  },
+  {
+    date: 'Novembre 2025',
+    title: "Nouvelle publication : Inverse Problem Approach to Aberration Correction for In Vivo Transcranial Imaging Based on a Sparse Representation of Contrast-Enhanced Ultrasound Data",
+    images: ['news-03'],
+    body: [
+      "Paul Xing et coauteurs ont publié un nouvel article dans IEEE Transactions on Biomedical Engineering.",
+      "Dans ce travail, nous présentons une approche de problème inverse pour la correction d'aberration (IPAC) qui exploite la parcimonie des signaux de microbulles. Nous proposons d'utiliser la connaissance a priori du milieu basée sur la localisation des microbulles et la propagation des ondes pour construire un modèle direct permettant de relier les signaux mesurés directement à la fonction d'aberration. Nous avons démontré que l'IPAC peut effectuer une correction d'aberration induite par le crâne et améliorer le Doppler de puissance ainsi que les images ULM acquises sur le cerveau de souris.",
+    ],
+    links: [{ label: 'DOI : 10.1109/TBME.2025.3564473', url: 'https://doi.org/10.1109/TBME.2025.3564473' }],
+  },
+  {
+    date: '18 septembre 2025',
+    title: "7 articles à l'IEEE International Ultrasonics Symposium",
+    images: ['news-04'],
+    body: [
+      "Nous avons été ravis de présenter nos travaux à l'IUS cette année ! Jonathan et Paul ont démontré comment les aberrations faibles et fortes causées par le crâne peuvent être corrigées de manière pratique et reproductible.",
+      "Alice et Stephen ont présenté comment un traitement d'ensemble long peut permettre de meilleures mesures de vitesse d'onde de pouls et un meilleur étiquetage des vaisseaux. Oleksandra a présenté sa nouvelle approche théragnostique haute fréquence pour l'ouverture et la surveillance de la BHE utilisant l'ULM dynamique. Nin a révélé notre ensemble de données géant d'acquisitions de cerveau de souris in vivo, qui sera bientôt publié, et que Brice a exploité pour démontrer les avantages d'utiliser des données in vivo pour développer des stratégies de reconstruction par apprentissage profond. Enfin, Alexis a décrit son cadre de simulation réaliste pour améliorer l'ULM dynamique cardiaque chez l'humain. Restez à l'écoute pour les publications associées !",
+    ],
+  },
+  {
+    date: '12 septembre 2025',
+    title: "Nouvelle prépublication : The-Bodega — Une boîte à outils MATLAB pour des simulations biologiquement dynamiques de microbulles sur des graphes microvasculaires hémodynamiques réalistes",
+    headshot: 'stephen-a-lee',
+    images: ['bodega-arxiv-2025'],
+    body: [
+      "Stephen Lee et co-auteurs publient The-Bodega, une boîte à outils MATLAB open-source pour simuler la dynamique des microbulles sur des graphes microvasculaires 3D anatomiquement réalistes. Elle génère des jeux de données de vérité terrain pour développer et évaluer les algorithmes de microscopie par localisation ultrasonore, avec des modèles vasculaires intégrés allant du cerveau de souris au cœur humain, et une intégration avec des simulateurs existants tels que k-Wave et FULLWAVE.",
+    ],
+    links: [{ label: 'Prépublication (arXiv)', url: 'https://doi.org/10.48550/ARXIV.2509.08149' }],
+  },
+  {
+    date: '10 septembre 2025',
+    title: "Nouvelle publication : 3D transcranial Dynamic Ultrasound Localization Microscopy in the mouse brain using a Row-Column Array",
+    images: ['news-05'],
+    body: [
+      "Alice Wu et coauteurs ont publié un nouvel article dans IEEE Transactions on Biomedical Engineering (publication en ligne anticipée).",
+      "Dans ce travail, nous démontrons pour la première fois un protocole de microscopie par localisation ultrasonore dynamique 3D+t (DULM) utilisant un réseau ligne-colonne (RCA) pour mesurer le flux sanguin dans l'ensemble du cerveau de souris de manière transcrânienne avec une résolution spatiale et temporelle élevée. La technique acquiert des images volumétriques à 750 Hz en utilisant 42 ondes planes inclinées, permettant des cartes de densité et de vitesse super-résolues du réseau vasculaire cérébral en 3D.",
+    ],
+    links: [{ label: 'DOI : 10.1109/TBME.2025.3598693', url: 'https://doi.org/10.1109/TBME.2025.3598693' }],
+  },
+  {
+    date: '28 mai 2025',
+    title: "Notre équipe brille au Symposium québécois d'imagerie médicale 2025",
+    images: ['news-06'],
+    body: [
+      "Le Centre de recherche en données massives (CRDM) de l'Université Laval a accueilli la deuxième édition de son symposium sur l'imagerie médicale, organisé en collaboration avec le Réseau de bio-imagerie du Québec (RBIQ) et le Réseau santé numérique (RSN).",
+      "Nous sommes fiers d'annoncer que huit membres du laboratoire ont présenté leurs travaux lors de cet événement, mettant en valeur la diversité et l'excellence de nos recherches en cours. Félicitations particulières au professeur Jean Provost, qui a reçu le Prix Étoile montante en bio-imagerie, et à Alexis Leconte, doctorant, qui a été honoré du Prix de la meilleure présentation orale étudiante.",
+    ],
+  },
+  {
+    date: '2 avril 2025',
+    title: "Nos doctorants à la première édition de Polycongré !",
+    images: ['news-07'],
+    body: [
+      "La première édition de Polycongré s'est récemment tenue à Polytechnique Montréal, offrant une plateforme unique pour présenter les recherches étudiantes — organisée par des étudiants, pour les étudiants.",
+      "Trois doctorants de notre laboratoire ont eu l'occasion de présenter leurs travaux : Alice a présenté sa recherche sous forme d'affiche ; Alexis a également présenté une affiche et a servi de président de session pour plusieurs sessions ; Oleksandra a donné une présentation orale. Félicitations à eux pour leurs contributions et pour avoir représenté le laboratoire à cette première édition prometteuse de Polycongré !",
+    ],
+  },
+  {
+    date: '24 mars 2025',
+    title: "Nouvelle publication : Pruning Sparse Tensor Neural Networks Enables Deep Learning for 3D Ultrasound Localization Microscopy",
+    images: ['news-08'],
+    body: [
+      "Brice Rauby et coauteurs ont publié un nouvel article dans IEEE Transactions on Image Processing.",
+      "Dans ce travail, nous proposons l'utilisation de réseaux de neurones tensoriels creux pour permettre l'ULM 3D basée sur l'apprentissage profond en améliorant l'extensibilité de la mémoire avec l'augmentation de la dimensionnalité. En 3D, l'approche proposée réduit les besoins en mémoire de deux ordres de grandeur tout en surpassant largement l'ULM conventionnelle dans des conditions de concentration élevée. Nous démontrons que les réseaux de neurones tensoriels creux en ULM 3D permettent les mêmes avantages que les méthodes basées sur l'apprentissage profond dense en ULM 2D, c'est-à-dire l'utilisation de concentrations plus élevées in silico et un temps d'acquisition réduit.",
+    ],
+  },
+  {
+    date: '11 février 2025',
+    title: "Alexis a présenté ses travaux au programme de génie biomédical de Polytechnique Montréal",
+    images: ['news-09'],
+    body: [
+      "Alexis a eu l'occasion de présenter ses recherches dans le cadre de Pizza Biomed. Cet événement informel permet aux étudiants en génie biomédical de découvrir les recherches en cours dans leur domaine.",
+      "Alexis a partagé ses travaux et a échangé avec les étudiants, leur offrant un aperçu des avancées scientifiques actuelles. Une belle initiative pour rapprocher la recherche et la prochaine génération d'ingénieurs biomédicaux !",
+    ],
+  },
+  {
+    date: '4 février 2025',
+    title: "Nouvelle publication : A Tracking Prior to Localization Workflow for Ultrasound Localization Microscopy",
+    images: ['news-10'],
+    body: [
+      "Alexis Leconte et co-auteurs ont publié un article dans IEEE Transactions on Medical Imaging.",
+      "Dans ce travail, nous proposons un flux de travail de suivi avant localisation (TAL) pour la microscopie par localisation ultrasonore (ULM). Contrairement à l'approche conventionnelle de localisation et suivi (LAT) — où les microbulles sont d'abord localisées puis suivies — notre méthode estime d'abord le mouvement des microbulles et effectue ensuite la localisation le long de leurs trajectoires prédites. Cette inversion du flux de travail améliore la robustesse dans des conditions de concentration élevée, où les signaux qui se chevauchent rendent la localisation difficile. À travers des expériences in silico et in vivo, nous démontrons que le cadre TAL améliore la reconstruction vasculaire, augmente la précision de localisation et fournit des cartes de vitesse plus fiables par rapport aux approches traditionnelles.",
+    ],
+  },
+  {
+    date: '20 décembre 2024',
+    title: "Nouvelle publication : 3D ultrasound localization microscopy of the nonhuman primate brain",
+    images: ['news-11'],
+    body: [
+      "Paul Xing et co-auteurs ont publié un nouvel article dans EBioMedicine.",
+      "Dans ce travail, nous avons testé la faisabilité de l'ULM 3D du cerveau de primate non humain (PNH) avec un seul scanner ultrasonore programmable à 256 canaux. Nous avons obtenu une carte vasculaire hautement résolue du cerveau de macaque à grande profondeur (jusqu'à 3 cm) en présence de craniotomie et de durectomie en utilisant une sonde matricielle multiplexée à 8 MHz. Nous avons pu distinguer des vaisseaux aussi petits que 26,9 µm, et démontré que l'imagerie transcrânienne du cerveau de macaque à une profondeur similaire était faisable avec une sonde à 3 MHz, atteignant une résolution de 60 µm.",
+    ],
+  },
+  {
+    date: '30 septembre 2024',
+    title: "Le laboratoire a participé à IEEE IUS Taiwan 2024",
+    images: ['news-12'],
+    body: [
+      "Notre équipe a récemment participé à la conférence IEEE IUS à Taïwan. L'événement a été l'occasion de présenter nos travaux, d'échanger des idées avec des experts du domaine et de découvrir une autre partie du monde. Une expérience enrichissante qui nous motive pour l'avenir !",
+    ],
+  },
+  {
+    date: '17 septembre 2024',
+    title: "Nouvelle publication : Deep Learning in Ultrasound Localization Microscopy: Applications and Perspectives",
+    images: ['news-13'],
+    body: [
+      "Brice Rauby et co-auteurs ont publié un nouvel article dans IEEE Transactions on Ultrasonics, Ferroelectrics, and Frequency Control.",
+      "Nous proposons une revue exhaustive de la diversité des applications de l'apprentissage profond en ULM, en nous concentrant sur les approches supposant une distribution parcimonieuse des microbulles. Nous fournissons d'abord un aperçu de la façon dont les études existantes varient dans la constitution de leurs jeux de données ou dans les tâches ciblées par le modèle d'apprentissage profond. Nous examinons également plus en profondeur les nombreuses approches proposées pour améliorer la localisation des microbulles, et discutons enfin des limitations et défis actuels de ces méthodes, ainsi que des promesses et du potentiel de l'apprentissage profond pour l'ULM dans l'avenir.",
+    ],
+  },
+  {
+    date: '30 août 2024',
+    title: "Première participation à une Gordon Research Conference",
+    images: ['news-14'],
+    body: [
+      "Nous avons eu le plaisir de participer pour la première fois à une Gordon Research Conference : In Vivo Ultrasound Imaging Conference. Jean a donné une présentation invitée sur les travaux du laboratoire, et Alexis, Alice et Nin ont présenté leurs affiches.",
+    ],
+  },
+  {
+    date: '15 mai 2024',
+    title: "Notre laboratoire sera présent à ISBI à Athènes",
+    images: ['news-15'],
+    body: [
+      "Heureux d'annoncer que Stephen et Paul, deux membres de notre laboratoire, présenteront leurs derniers travaux à ISBI à Athènes !",
+    ],
+  },
+  {
+    date: 'Février 2024',
+    title: "Nouvelle publication : Phase Aberration Correction for In Vivo Ultrasound Localization Microscopy Using a Spatiotemporal Complex-Valued Neural Network",
+    images: ['news-16'],
+    body: [
+      "Paul Xing et co-auteurs ont publié un nouvel article dans IEEE Transactions on Medical Imaging.",
+      "Dans ce travail, nous avons proposé une approche d'apprentissage profond basée sur les réseaux neuronaux convolutifs à valeurs complexes (CV-CNNs) récemment introduits pour récupérer la fonction d'aberration, qui peut ensuite être utilisée pour former des images améliorées via le délai-et-somme standard. Des convolutions spatio-temporelles 3D ont été utilisées pour que le réseau exploite des pistes entières de microbulles. Le CV-CNN s'est révélé plus robuste que la méthode basée sur la cohérence et a pu effectuer la correction d'aberrations chez une souris de 6 mois.",
+    ],
+  },
+  {
+    date: '9 novembre 2023',
+    title: "Chloé, Stephen et Paul honorés au Gala PolyChrome",
+    images: ['news-17', 'news-18'],
+    body: [
+      "Trois de nos collègues ont été honorés au Gala PolyChrome pour leurs réussites : Chloé, pour le premier prix de la bourse Fernand-Seguin (Association des communicateurs scientifiques du Québec) ; Stephen, pour la Bourse postdoctorale Banting (Gouvernement du Canada) ; et Paul, pour la Bourse d'études supérieures du Canada au niveau doctoral (CRSNG).",
+    ],
+  },
+  {
+    date: '9 juin 2023',
+    title: "Alexis finaliste du concours « La preuve par l'image » !",
+    images: ['news-19'],
+    body: [
+      "Alexis, étudiant à la maîtrise recherche au laboratoire, a été sélectionné parmi les finalistes du concours « La preuve par l'image » de l'Acfas ! Son image, intitulée « Les vaisseaux de la mémoire », était candidate pour le prix du public parrainé par l'émission Découverte de Radio-Canada. Félicitations, Alexis !",
+    ],
+  },
+  {
+    date: '2 juin 2023',
+    title: "Chloé remporte le 1er prix de la bourse Fernand-Seguin 2023 !",
+    images: ['news-20'],
+    body: [
+      "Chloé, doctorante au laboratoire, a remporté le premier prix de la bourse Fernand-Seguin 2023 de l'Association des communicateurs scientifiques du Québec (ACS) ! Cette bourse lui permettra de réaliser plusieurs stages en journalisme scientifique au cours de l'année à venir. Toutes nos félicitations !",
+    ],
+  },
+  {
+    date: '20 avril 2023',
+    title: "Le laboratoire à l'honneur sur la chaîne YouTube Scilabus !",
+    video: { type: 'youtube', id: '5VxaoK36mCQ' },
+    body: [
+      "Viviane Lalande, de la chaîne YouTube Scilabus, nous a rendu visite au laboratoire pour réaliser une vidéo sur la microscopie par localisation ultrasonore (ULM). Elle a interviewé Chloé sur cette méthode qui est au cœur des projets menés dans notre laboratoire. Merci Viviane !",
+    ],
+  },
+  {
+    date: '14 décembre 2022',
+    title: "Article dans le magazine « Curium » !",
+    images: ['news-21'],
+    body: [
+      "Chloé a eu l'opportunité de présenter ses recherches et ses activités en journalisme scientifique dans le magazine Curium, à l'occasion de l'obtention du prix Relève étoile Louis-Berlinguet du Fonds de recherche du Québec – Nature et technologies (FRQNT). Cette distinction lui a été décernée à la suite de la parution de son tout premier article, intitulé « In Vivo Pulsatility Measurement of Cerebral Microcirculation in Rodents Using Dynamic Ultrasound Localization Microscopy », publié dans la revue IEEE TMI en avril 2022.",
+    ],
+  },
+  {
+    date: '17 mai 2022',
+    title: "Article dans le magazine « L'actualité » !",
+    images: ['news-22'],
+    body: [
+      "Il y a quelques jours, Chloé a remporté le 29e concours de vulgarisation de la recherche de l'Acfas (volet texte). Son texte a été publié par le magazine L'actualité dans un article intitulé : « Démence : mieux comprendre le rôle de la circulation sanguine ».",
+    ],
+  },
+  {
+    date: '3 décembre 2019',
+    title: "Bourse TransMedTech décernée à Vincent",
+    body: [
+      "Vincent, notre futur chercheur postdoctoral qui se joindra à nous en février, a obtenu une bourse d'excellence de l'Institut TransMedTech pour mener ses recherches sur la microscopie par localisation ultrasonore en 3D. TransMedTech offre un environnement unique, regroupant des chercheurs et divers acteurs du génie biomédical issus de domaines variés. Cette multidisciplinarité favorisera l'avancement du projet et stimulera l'innovation autour de ses travaux. Félicitations à lui !",
+    ],
+  },
+  {
+    date: '1er novembre 2019',
+    title: "Arrivée de nouveaux stagiaires",
+    body: [
+      "Au début du mois de novembre, trois nouveaux stagiaires ont rejoint le laboratoire : Jacynthe, étudiante de 3e année en génie biomédical ; Jean-François, étudiant de 3e année en génie physique ; et Paul, étudiant en génie physique, M. Sc. en sciences neurologiques. Ils travailleront sur des projets tels que les fantômes de flux ou la correction d'aberrations. Bienvenue au laboratoire !",
+    ],
+  },
+  {
+    date: '9 octobre 2019',
+    title: "Présentation de Chloé à l'IEEE IUS 2019",
+    images: ['news-23'],
+    body: [
+      "Chloé a présenté ses travaux intitulés « Pulsatility mapping using time-resolved ultrasound localization microscopy in the rodent's brain in vivo » lors de la conférence internationale IEEE IUS 2019 à Glasgow, en Écosse. À cette occasion, elle a donné une présentation orale sur ses premiers résultats de mesure de pulsatilité 2D in vivo dans le cerveau de rat, et a dévoilé les premières images obtenues par microscopie par localisation ultrasonore dynamique (DULM).",
+    ],
+  },
+  {
+    date: '1er octobre 2019',
+    title: "Jacynthe, Jean-François, Paul et Samuel reçoivent une bourse UPIR",
+    body: [
+      "Félicitations à Jacynthe, Jean-François, Paul et Samuel, lauréats d'une bourse de l'Unité de participation et d'initiation à la recherche (UPIR) de Polytechnique Montréal. Ces bourses leur permettront de faire progresser leurs projets au sein du laboratoire !",
+    ],
+  },
+  {
+    date: '27 septembre 2019',
+    title: "Bourses du RBIQ décernées à Erwan et Chloé",
+    body: [
+      "Félicitations à Erwan et Chloé, respectivement étudiants à la maîtrise et au doctorat, qui viennent de recevoir une bourse du Réseau de Bio-Imagerie du Québec (RBIQ). Erwan poursuivra ses travaux sur les méthodes d'acquisition ultrasonore compressée, tandis que Chloé travaillera sur la faisabilité de la mesure de la pulsatilité cérébrale in vivo en développant la méthode de microscopie par localisation ultrasonore dynamique (DULM).",
+    ],
+  },
+  {
+    date: '6 septembre 2019',
+    title: "Chloé, Philippe et Hatim à la Journée du génie physique de Polytechnique Montréal",
+    images: ['news-24'],
+    body: [
+      "Chloé, Hatim et Philippe ont présenté leurs travaux lors de la Journée du génie physique organisée à Polytechnique Montréal. Hatim a remporté le premier prix au concours de la meilleure affiche. Félicitations à tous les trois !",
+    ],
+  },
+  {
+    date: '19 juin 2019',
+    title: "Octroi d'une bourse BRPC du CRSNG à Samuel",
+    images: ['news-25'],
+    body: [
+      "Samuel est lauréat d'une bourse de recherche de premier cycle (BRPC) du Conseil de recherches en sciences naturelles et en génie du Canada (CRSNG) pour financer son stage d'été. Toutes nos félicitations !",
+    ],
+  },
+  {
+    date: '19 juin 2019',
+    title: "Présentation de Chloé lors de la 22e Journée de la recherche de l'Institut de Cardiologie de Montréal",
+    body: [
+      "Chloé a présenté ses travaux lors d'une séance d'affiches à l'occasion de la 22e Journée de la recherche, qui s'est tenue à l'Institut de Cardiologie de Montréal (ICM). Lors de cet événement, un concours de vulgarisation scientifique organisé pour les étudiants, stagiaires postdoctoraux, résidents et directeurs de recherche, elle a pu échanger avec des médecins, des spécialistes de l'athérosclérose, ainsi qu'avec des patients atteints de maladies cardiovasculaires.",
+    ],
+  },
+];
 ---
 <Base lang="fr">
   <h1>Laboratoire d'ultrasons Provost</h1>
-  <p><em>Section en cours de traduction.</em></p>
+
+  {news.map((e) => (
+    <article class="news">
+      {e.headshot && (
+        <img class="byline-avatar" src={img(e.headshot)} alt="" loading="lazy" />
+      )}
+      <div class="news-date">{e.date}</div>
+      <h2 class="news-title">{e.title}</h2>
+      {e.images && (
+        <div class="news-media">
+          {e.images.map((n) => (
+            <img src={img(n)} alt={e.title} loading="lazy" />
+          ))}
+        </div>
+      )}
+      {e.video && (
+        <div class="embed">
+          <iframe
+            src={e.video.type === 'youtube'
+              ? `https://www.youtube.com/embed/${e.video.id}`
+              : `https://drive.google.com/file/d/${e.video.id}/preview`}
+            title={e.title}
+            loading="lazy"
+            allow="autoplay; encrypted-media"
+            allowfullscreen
+          ></iframe>
+        </div>
+      )}
+      {e.body.map((p) => <p>{p}</p>)}
+      {e.links && (
+        <ul class="news-links">
+          {e.links.map((l) => (
+            <li><a href={l.url} target="_blank" rel="noopener">{l.label}</a></li>
+          ))}
+        </ul>
+      )}
+    </article>
+  ))}
+
+  <style>
+    .news { padding: 26px 0; border-bottom: 1px solid var(--line); }
+    .news:last-child { border-bottom: none; }
+    .news-date { font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    .news-title { font-size: 19px; margin: 4px 0 12px; color: var(--accent-dark); border: none; padding: 0; }
+    .news-media { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; }
+    .news-media img { width: 100%; max-width: 520px; height: auto; border-radius: 10px; display: block; }
+    .byline-avatar { float: right; width: 64px; height: 64px; border-radius: 50%; object-fit: cover; margin: 6px 0 10px 14px; }
+    .embed { position: relative; aspect-ratio: 16 / 9; max-width: 560px; margin-bottom: 14px; }
+    .embed iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; border-radius: 10px; }
+    .news p { margin: 0 0 10px; }
+    .news-links { margin: 8px 0 0; padding-left: 18px; }
+    .news-links li { margin: 2px 0; }
+    .news-links a { font-size: 14px; }
+  </style>
 </Base>
