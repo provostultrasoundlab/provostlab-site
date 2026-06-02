@@ -1,30 +1,58 @@
 ---
 const base = import.meta.env.BASE_URL.replace(/\/$/, '') + '/';
-const { title = 'Provost Ultrasound Lab', lang = 'en' } = Astro.props;
+const { title, lang = 'en' } = Astro.props;
 
+const L = {
+  en: {
+    brand: 'Provost Ultrasound Lab',
+    defaultTitle: 'Provost Ultrasound Lab',
+    nav: { home: 'Home', research: 'Research', people: 'People', publications: 'Publications', codes: 'Codes', videos: 'Videos', join: 'Join our Team' },
+    toggleLabel: 'Français',
+    footer: 'Provost Ultrasound Lab · Polytechnique Montréal',
+  },
+  fr: {
+    brand: "Laboratoire d'ultrasons Provost",
+    defaultTitle: "Laboratoire d'ultrasons Provost",
+    nav: { home: 'Accueil', research: 'Recherche', people: 'Membres', publications: 'Publications', codes: 'Codes', videos: 'Vidéos', join: "Rejoignez notre équipe" },
+    toggleLabel: 'English',
+    footer: "Laboratoire d'ultrasons Provost · Polytechnique Montréal",
+  },
+};
+const t = L[lang];
+const resolvedTitle = title || t.defaultTitle;
+
+// Build nav paths with /fr/ prefix when on French
+const p = lang === 'fr' ? 'fr/' : '';
 const nav = [
-  { href: '', label: 'Home' },
-  { href: 'research', label: 'Research' },
-  { href: 'people', label: 'People' },
-  { href: 'publications', label: 'Publications' },
-  { href: 'publications/codes', label: 'Codes' },
-  { href: 'publications/videos', label: 'Videos' },
-  { href: 'join', label: 'Join our Team' },
-  { href: 'fr', label: 'Français' },
-  { href: 'tetris', label: 'Tetris', newTab: true },
-  { href: 'ulmaga', label: 'ULMaga', newTab: true },
+  { href: p,                       label: t.nav.home },
+  { href: p + 'research',          label: t.nav.research },
+  { href: p + 'people',            label: t.nav.people },
+  { href: p + 'publications',      label: t.nav.publications },
+  { href: p + 'publications/codes',  label: t.nav.codes },
+  { href: p + 'publications/videos', label: t.nav.videos },
+  { href: p + 'join',              label: t.nav.join },
 ];
 
 const link = (h) => (h ? `${base}${h}` : base);
 const here = Astro.url.pathname.replace(/\/$/, '');
 const isActive = (h) => here === link(h).replace(/\/$/, '');
+
+// Smart language toggle — mirror the current path in the other language
+const baseNoSlash = base.replace(/\/$/, '');
+let pathTail = here.startsWith(baseNoSlash) ? here.slice(baseNoSlash.length) : here;
+pathTail = pathTail.replace(/^\/+/, '');
+// Strip the fr/ prefix if present
+let mirrorTail = pathTail;
+if (mirrorTail.startsWith('fr/')) mirrorTail = mirrorTail.slice(3);
+else if (mirrorTail === 'fr') mirrorTail = '';
+const toggleHref = lang === 'fr' ? mirrorTail : ('fr/' + mirrorTail).replace(/\/$/, '');
 ---
 <!doctype html>
 <html lang={lang}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{title}</title>
+    <title>{resolvedTitle}</title>
     <link rel="icon" href={`${base}favicon.svg`} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -35,18 +63,19 @@ const isActive = (h) => here === link(h).replace(/\/$/, '');
   </head>
   <body>
     <header class="site-header">
-      <a class="brand" href={link('')}>Provost Ultrasound Lab</a>
+      <a class="brand" href={link(p)}>{t.brand}</a>
       <nav class="site-nav">
         {nav.map((item) => (
           <a
             href={link(item.href)}
             class={isActive(item.href) ? 'active' : ''}
-            target={item.newTab ? '_blank' : undefined}
-            rel={item.newTab ? 'noopener' : undefined}
           >
             {item.label}
           </a>
         ))}
+        <a class="lang-toggle" href={link(toggleHref)}>{t.toggleLabel}</a>
+        <a href={link('tetris')} target="_blank" rel="noopener">Tetris</a>
+        <a href={link('ulmaga')} target="_blank" rel="noopener">ULMaga</a>
       </nav>
     </header>
 
@@ -55,12 +84,12 @@ const isActive = (h) => here === link(h).replace(/\/$/, '');
     </main>
 
     <footer class="site-footer">
-      <p>Provost Ultrasound Lab &middot; Polytechnique Montréal</p>
+      <p>{t.footer}</p>
     </footer>
 
     <style is:global>
       :root {
-        --accent: #00477b;        /* clean institutional blue */
+        --accent: #00477b;
         --accent-dark: #002f54;
         --ink: #1d2733;
         --muted: #5f6b7a;
@@ -109,6 +138,13 @@ const isActive = (h) => here === link(h).replace(/\/$/, '');
       }
       .site-nav a:hover { color: var(--accent); }
       .site-nav a.active { color: var(--accent); font-weight: 600; }
+      .site-nav .lang-toggle {
+        color: var(--accent);
+        font-weight: 600;
+        border-left: 1px solid var(--line);
+        padding-left: 16px;
+        margin-left: 0;
+      }
       .content {
         max-width: var(--maxw);
         margin: 0 auto;
