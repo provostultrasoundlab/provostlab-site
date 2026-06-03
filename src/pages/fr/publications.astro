@@ -1,6 +1,10 @@
 ---
 import Base from '../../layouts/Base.astro';
-import publications from '../../data/publications.json';
+import yamlText from '../../data/publications.yaml?raw';
+import yaml from 'js-yaml';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '') + '/';
+const publications = yaml.load(yamlText);
 
 const linkify = (s) =>
   s.replace(/(https?:\/\/[^\s<>"]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
@@ -20,8 +24,8 @@ const linkify = (s) =>
       <h3 class="year-header">{group.year === 'Upcoming' ? 'À venir' : group.year}</h3>
       {group.items.map((it) => (
         <article class="pub">
-          <a class="pub-title" href={it.url} target="_blank" rel="noopener">{it.name}</a>
-          <p class="pub-cite" set:html={linkify(it.description)} />
+          <a class="pub-title" href={`${base}${it.pdf}`} target="_blank" rel="noopener">{it.title}</a>
+          <p class="pub-cite" set:html={linkify(it.citation)} />
         </article>
       ))}
     </section>

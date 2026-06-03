@@ -9,9 +9,11 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "sync-citations": "node scripts/sync-citations.mjs"
   },
   "dependencies": {
-    "astro": "^6.4.1"
+    "astro": "^6.4.1",
+    "js-yaml": "^4.2.0"
   }
 }
