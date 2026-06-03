@@ -1,0 +1,869 @@
+---
+import Base from '../../layouts/Base.astro';
+---
+<Base lang="fr" title="ULMaga — Laboratoire d'ultrasons Provost">
+  <div class="game-wrap">
+    <h1>ULMaga</h1>
+    <p class="tagline">Visez avec la sonde. Faites éclater les bulles avant qu'elles ne vous atteignent.</p>
+
+    <div class="game-area">
+      <div class="board-wrap">
+        <canvas id="board" width="480" height="640"></canvas>
+        <div id="overlay" class="overlay hidden">
+          <div class="overlay-content">
+            <div id="overlay-title">En pause</div>
+            <div id="overlay-sub"></div>
+            <button id="resume" class="btn">Reprendre</button>
+          </div>
+        </div>
+      </div>
+
+      <aside class="sidebar">
+        <div class="stat"><div class="label">Score</div><div class="value" id="score">0</div></div>
+        <div class="stat"><div class="label">Vies</div><div class="value" id="lives">♥♥♥</div></div>
+        <div class="stat"><div class="label">Vague</div><div class="value" id="wave">1</div></div>
+        <div class="stat"><div class="label">Impulsion</div><div class="value" id="charges">3</div></div>
+        <button id="restart" class="btn ghost">Nouvelle partie</button>
+        <details class="controls">
+          <summary>Contrôles</summary>
+          <ul>
+            <li><kbd>←</kbd> <kbd>→</kbd> ou <kbd>A</kbd> <kbd>D</kbd> déplacer</li>
+            <li><kbd>Espace</kbd> tirer (maintenir pour tir automatique)</li>
+            <li><kbd>X</kbd> onde plane (super — fait éclater tout)</li>
+            <li><kbd>P</kbd> pause</li>
+          </ul>
+        </details>
+      </aside>
+    </div>
+  </div>
+
+  <script is:inline>
+    (function () {
+      const W = 480, H = 640;
+      const board = document.getElementById('board');
+      const ctx = board.getContext('2d');
+      // Offscreen layer that accumulates each microbubble's track (the live vasculature)
+      const trail = document.createElement('canvas');
+      trail.width = W; trail.height = H;
+      const tctx = trail.getContext('2d');
+      tctx.lineCap = 'round';
+      tctx.lineJoin = 'round';
+      const scoreEl = document.getElementById('score');
+      const livesEl = document.getElementById('lives');
+      const waveEl = document.getElementById('wave');
+      const chargesEl = document.getElementById('charges');
+      const overlay = document.getElementById('overlay');
+      const overlayTitle = document.getElementById('overlay-title');
+      const overlaySub = document.getElementById('overlay-sub');
+      const restartBtn = document.getElementById('restart');
+      const resumeBtn = document.getElementById('resume');
+
+      // Bright Doppler-style palettes; each vessel/trunk is one side or the other
+      const REDS  = ['#ff1f1f', '#ff3838', '#ff5050', '#ff2a4a', '#ff0a0a'];
+      const BLUES = ['#1f5fff', '#3878ff', '#5294ff', '#2870ff', '#0a44ff'];
+
+      // Vascular hierarchy: 4 trunks with character (some enter from off-canvas top sides
+      // and curve inward); each branches into 2 arterioles, then a spread of capillaries.
+      const TRUNKS = [
+        // Pair 1 (left) — artery + vein curving in from the top-left
+        { entryX: -28,        branchX: W * 0.14, sway:  32, palette: 'red'  },
+        { entryX: -8,         branchX: W * 0.24, sway:  28, palette: 'blue' },
+        // Pair 2 (center) — nearly vertical with a gentle parallel S-bend
+        { entryX: W * 0.46,   branchX: W * 0.46, sway:  16, palette: 'red'  },
+        { entryX: W * 0.55,   branchX: W * 0.55, sway:  16, palette: 'blue' },
+        // Pair 3 (right) — artery + vein curving in from the top-right
+        { entryX: W + 8,      branchX: W * 0.76, sway: -28, palette: 'red'  },
+        { entryX: W + 28,     branchX: W * 0.86, sway: -32, palette: 'blue' },
+      ];
+      const ARTERIOLE_OFFSET = 48;
+      const CAPILLARY_SPREAD = 70;
+      const Y_ARTERIOLE = H * 0.22;
+      const Y_CAPILLARY = H * 0.55;
+
+      function smoothStep(t) { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); }
+
+      function targetXAt(b, y) {
+        const trunk = TRUNKS[b.trunkIdx];
+        const arteriole = trunk.branchX + b.arterioleSide * ARTERIOLE_OFFSET;
+        const capillary = arteriole + b.capillaryOff;
+        if (y < Y_ARTERIOLE) {
+          const t = Math.max(0, Math.min(1, y / Y_ARTERIOLE));
+          const s = smoothStep(t);
+          const baseX = trunk.entryX + (trunk.branchX - trunk.entryX) * s;
+          const swayOffset = trunk.sway * Math.sin(Math.PI * t);
+          return baseX + swayOffset;
+        }
+        if (y < Y_CAPILLARY) {
+          const t = (y - Y_ARTERIOLE) / (Y_CAPILLARY - Y_ARTERIOLE);
+          return trunk.branchX + (arteriole - trunk.branchX) * smoothStep(t);
+        }
+        const t = Math.min(1, (y - Y_CAPILLARY) / (H * 0.3));
+        return arteriole + (capillary - arteriole) * smoothStep(t);
+      }
+
+      function rand(a, b) { return Math.random() * (b - a) + a; }
+      function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+      function hexToRgb(hex) {
+        const n = parseInt(hex.replace('#', ''), 16);
+        return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+      }
+
+      // ── Web Audio: Doppler-style chirps and bubble pops ─────────────────────
+      let audioCtx = null;
+      function ensureAudio() {
+        if (!audioCtx) {
+          try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+          catch (e) { audioCtx = null; }
+        }
+        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+      }
+
+      function playShot() {
+        if (!audioCtx) return;
+        const t0 = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1400, t0);
+        osc.frequency.exponentialRampToValueAtTime(380, t0 + 0.075);
+        const g = audioCtx.createGain();
+        g.gain.setValueAtTime(0, t0);
+        g.gain.linearRampToValueAtTime(0.045, t0 + 0.003);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.09);
+        osc.connect(g).connect(audioCtx.destination);
+        osc.start(t0); osc.stop(t0 + 0.11);
+      }
+
+      function playPlaneWave() {
+        if (!audioCtx) return;
+        const t0 = audioCtx.currentTime;
+        const o1 = audioCtx.createOscillator(); o1.type = 'sawtooth';
+        o1.frequency.setValueAtTime(900, t0);
+        o1.frequency.exponentialRampToValueAtTime(120, t0 + 0.42);
+        const o2 = audioCtx.createOscillator(); o2.type = 'square';
+        o2.frequency.setValueAtTime(1300, t0);
+        o2.frequency.exponentialRampToValueAtTime(170, t0 + 0.42);
+        const f = audioCtx.createBiquadFilter();
+        f.type = 'lowpass'; f.Q.value = 5;
+        f.frequency.setValueAtTime(2400, t0);
+        f.frequency.exponentialRampToValueAtTime(380, t0 + 0.42);
+        const g = audioCtx.createGain();
+        g.gain.setValueAtTime(0, t0);
+        g.gain.linearRampToValueAtTime(0.16, t0 + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.48);
+        o1.connect(f); o2.connect(f); f.connect(g).connect(audioCtx.destination);
+        o1.start(t0); o2.start(t0); o1.stop(t0 + 0.5); o2.stop(t0 + 0.5);
+      }
+
+      function playPop(radius) {
+        if (!audioCtx) return;
+        const t0 = audioCtx.currentTime;
+        // Larger bubbles → lower fundamental (acoustic-resonance feel)
+        const f0 = Math.max(180, Math.min(1500, 1500 - (radius - 10) * 55));
+        const osc = audioCtx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(f0, t0);
+        osc.frequency.exponentialRampToValueAtTime(Math.max(80, f0 * 0.45), t0 + 0.12);
+        const g = audioCtx.createGain();
+        g.gain.setValueAtTime(0, t0);
+        g.gain.linearRampToValueAtTime(0.06, t0 + 0.004);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.2);
+        osc.connect(g).connect(audioCtx.destination);
+        osc.start(t0); osc.stop(t0 + 0.22);
+      }
+
+      let player, bullets, bubbles, particles, ripples, planeWaves, beams;
+      let score, lives, wave, superCharges;
+      let lastSpawn, spawnInterval, lastShot, lastTime;
+      let paused = false, gameOver = false;
+      const SHOT_COOLDOWN = 180;
+
+      const keys = {};
+      const PRESS_ONLY = new Set(); // tracks keys whose press already fired single-shot logic
+
+      function spawnBubble() {
+        const r = rand(14, 30);
+        const trunkIdx = Math.floor(Math.random() * TRUNKS.length);
+        const trunk = TRUNKS[trunkIdx];
+        const arterioleSide = Math.random() < 0.5 ? -1 : 1;
+        const capillaryOff = rand(-CAPILLARY_SPREAD, CAPILLARY_SPREAD);
+        bubbles.push({
+          x: trunk.entryX + rand(-5, 5),
+          y: -r - 10,
+          r,
+          color: pick(trunk.palette === 'red' ? REDS : BLUES),
+          heading: Math.PI / 2,
+          baseSpeed: rand(45 + wave * 4, 105 + wave * 6),
+          speedPhase: rand(0, Math.PI * 2),
+          turnPhase: rand(0, Math.PI * 2),
+          turnFreq: rand(0.6, 2.2),
+          turnAmp: rand(0.9, 1.7),
+          age: 0,
+          vx: 0, vy: 0,
+          trunkIdx, arterioleSide, capillaryOff,
+        });
+      }
+
+      function shoot() {
+        const now = performance.now();
+        if (now - lastShot < SHOT_COOLDOWN) return;
+        lastShot = now;
+        const cx = player.x + player.w / 2;
+        const yProbe = player.y - 4;
+        bullets.push({ x: cx, y: yProbe, vy: -520, r: 3.5, life: 1.5 });
+        // Ripple at probe face when firing
+        ripples.push({ x: cx, y: yProbe, r: 6, alpha: 0.55 });
+        // Focused-beam shape (hourglass: wide at aperture, narrow at focus, diverging in the far field)
+        beams.push({
+          x: cx,
+          yProbe,
+          yFocus: Math.max(70, yProbe - 240),
+          age: 0,
+          duration: 0.32,
+        });
+        playShot();
+      }
+
+      function firePlaneWave() {
+        if (superCharges <= 0) return;
+        superCharges--;
+        planeWaves.push({
+          y: player.y - 4,
+          height: 28,
+          vy: -780,
+          age: 0,
+        });
+        // Three big concentric ripples at the probe face for feedback
+        for (let i = 0; i < 3; i++) {
+          ripples.push({ x: player.x + player.w / 2, y: player.y - 4, r: 8 + i * 4, alpha: 0.6 });
+        }
+        playPlaneWave();
+        updateStats();
+      }
+
+      function popBubble(b, big) {
+        playPop(b.r);
+        const n = big ? 22 : 14;
+        for (let i = 0; i < n; i++) {
+          const a = (i / n) * Math.PI * 2 + Math.random() * 0.4;
+          const v = rand(80, 200);
+          particles.push({
+            x: b.x, y: b.y,
+            vx: Math.cos(a) * v,
+            vy: Math.sin(a) * v,
+            r: rand(1.5, 3.5),
+            color: b.color,
+            life: 0.7,
+          });
+        }
+        score += Math.round((34 - b.r) * 4);
+        updateStats();
+      }
+
+      function updateStats() {
+        scoreEl.textContent = score;
+        livesEl.textContent = lives > 0 ? '♥'.repeat(lives) : '—';
+        waveEl.textContent = wave;
+        chargesEl.textContent = superCharges;
+      }
+
+      function tick(dt) {
+        // Player movement
+        const speed = 360;
+        if (keys.ArrowLeft || keys.KeyA) player.x -= speed * dt;
+        if (keys.ArrowRight || keys.KeyD) player.x += speed * dt;
+        player.x = Math.max(0, Math.min(W - player.w, player.x));
+
+        // Auto-fire while space held
+        if (keys.Space) shoot();
+
+        // Bullets
+        for (const b of bullets) { b.y += b.vy * dt; b.life -= dt; }
+        bullets = bullets.filter((b) => b.y + b.r > 0 && b.life > 0);
+
+        // Bubbles — curving motion, pulsatile speed, cavitation timer, track onto vasculature layer
+        for (const b of bubbles) {
+          if (b.cavitating) {
+            b.cavTime += dt;
+            b.baseSpeed *= Math.pow(0.35, dt);
+          } else {
+            b.age += dt;
+            // Depth-dependent vessel rules. Trunks need a wider maxDev because they can
+            // come in diagonally from the top sides.
+            let turnAmpScale, targetPull, maxDev;
+            if (b.y < Y_ARTERIOLE) {
+              turnAmpScale = 0.15; targetPull = 4.0; maxDev = Math.PI / 3;
+            } else if (b.y < Y_CAPILLARY) {
+              turnAmpScale = 0.7;  targetPull = 1.6; maxDev = Math.PI / 5;
+            } else {
+              turnAmpScale = 1.0;  targetPull = 0.6; maxDev = Math.PI / 3;
+            }
+            // Pull heading toward where this bubble's vessel is 80 px below the current depth
+            const tx = targetXAt(b, b.y + 80);
+            const dx = tx - b.x;
+            const desired = Math.atan2(80, dx);
+            let diff = desired - b.heading;
+            while (diff > Math.PI) diff -= 2 * Math.PI;
+            while (diff < -Math.PI) diff += 2 * Math.PI;
+            b.heading += diff * targetPull * dt;
+            // Sinusoidal wobble (amplitude scaled by depth)
+            const turn = b.turnAmp * turnAmpScale * Math.sin(b.age * b.turnFreq + b.turnPhase);
+            b.heading += turn * dt;
+            // Clamp deviation
+            let dev = b.heading - Math.PI / 2;
+            while (dev > Math.PI) dev -= 2 * Math.PI;
+            while (dev < -Math.PI) dev += 2 * Math.PI;
+            if (Math.abs(dev) > maxDev) b.heading = Math.PI / 2 + Math.sign(dev) * maxDev;
+          }
+          const speedMod = b.cavitating ? 1 : (1 + 0.35 * Math.sin(b.age * 2.5 + b.speedPhase));
+          const speed = b.baseSpeed * speedMod;
+          b.vx = Math.cos(b.heading) * speed;
+          b.vy = Math.sin(b.heading) * speed;
+
+          const prevX = b.prevX, prevY = b.prevY;
+          b.x += b.vx * dt;
+          b.y += b.vy * dt;
+          // Only bounce off walls once the bubble has settled into the arteriole region,
+          // so trunks entering from off-canvas sides can curve in without bouncing.
+          if (b.y > Y_ARTERIOLE) {
+            if (b.x < b.r) { b.x = b.r; b.heading = Math.PI - b.heading; }
+            if (b.x > W - b.r) { b.x = W - b.r; b.heading = Math.PI - b.heading; }
+          }
+
+          if (prevX !== undefined) {
+            tctx.strokeStyle = b.color;
+            tctx.lineWidth = Math.max(1.4, b.r * 0.32);
+            tctx.beginPath();
+            tctx.moveTo(prevX, prevY);
+            tctx.lineTo(b.x, b.y);
+            tctx.stroke();
+          }
+          b.prevX = b.x;
+          b.prevY = b.y;
+        }
+        // Slowly age the vasculature so it keeps evolving
+        tctx.save();
+        tctx.globalCompositeOperation = 'destination-out';
+        tctx.fillStyle = 'rgba(0,0,0,0.004)';
+        tctx.fillRect(0, 0, W, H);
+        tctx.restore();
+
+        // Pop bubbles whose cavitation has finished
+        for (let j = bubbles.length - 1; j >= 0; j--) {
+          const b = bubbles[j];
+          if (b.cavitating && b.cavTime >= b.cavDuration) {
+            popBubble(b, true);
+            if (b.splitOnPop) {
+              for (let k = 0; k < 2; k++) {
+                const branch = k === 0 ? -1 : 1;
+                bubbles.push({
+                  x: b.x, y: b.y,
+                  r: b.r * 0.55,
+                  color: b.color,
+                  heading: b.heading + branch * 0.55 + rand(-0.15, 0.15),
+                  baseSpeed: b.baseSpeed * rand(0.9, 1.3),
+                  speedPhase: rand(0, Math.PI * 2),
+                  turnPhase: rand(0, Math.PI * 2),
+                  turnFreq: rand(0.8, 2.4),
+                  turnAmp: rand(0.9, 1.8),
+                  age: 0,
+                  vx: 0, vy: 0,
+                  // Inherit parent's tree position; offset capillary so children fan out
+                  trunkIdx: b.trunkIdx,
+                  arterioleSide: b.arterioleSide,
+                  capillaryOff: b.capillaryOff + branch * CAPILLARY_SPREAD * 0.6,
+                });
+              }
+            }
+            bubbles.splice(j, 1);
+          }
+        }
+
+        // Bullet vs bubble collisions — start cavitation rather than instant pop
+        for (let i = bullets.length - 1; i >= 0; i--) {
+          const bullet = bullets[i];
+          let hit = false;
+          for (let j = bubbles.length - 1; j >= 0; j--) {
+            const bub = bubbles[j];
+            if (bub.cavitating) continue;
+            const dx = bullet.x - bub.x, dy = bullet.y - bub.y;
+            if (dx * dx + dy * dy < (bullet.r + bub.r) * (bullet.r + bub.r)) {
+              bub.cavitating = true;
+              bub.cavTime = 0;
+              bub.cavDuration = 0.32;
+              bub.splitOnPop = bub.r > 22;
+              hit = true;
+              break;
+            }
+          }
+          if (hit) bullets.splice(i, 1);
+        }
+
+        // Bubbles vs floor / player (cavitating bubbles can't hurt the probe)
+        for (let j = bubbles.length - 1; j >= 0; j--) {
+          const b = bubbles[j];
+          const hitsPlayer = !b.cavitating &&
+            b.y + b.r >= player.y && b.y - b.r <= player.y + player.h &&
+            b.x + b.r >= player.x && b.x - b.r <= player.x + player.w;
+          const offBottom = b.y - b.r > H;
+          if (hitsPlayer || offBottom) {
+            if (hitsPlayer) {
+              lives = Math.max(0, lives - 1);
+              popBubble(b, true);
+              // White burst on impact
+              for (let i = 0; i < 18; i++) {
+                const a = (i / 18) * Math.PI * 2;
+                particles.push({
+                  x: b.x, y: b.y,
+                  vx: Math.cos(a) * 240,
+                  vy: Math.sin(a) * 240,
+                  r: rand(1.5, 4),
+                  color: '#ffffff',
+                  life: 0.6,
+                });
+              }
+              updateStats();
+              if (lives <= 0) {
+                gameOver = true;
+                showOverlay('Partie terminée', 'Score : ' + score + ' · Vague ' + wave);
+              }
+            }
+            bubbles.splice(j, 1);
+          }
+        }
+
+        // Particles
+        for (const p of particles) {
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          p.vy += 60 * dt;
+          p.vx *= (1 - 0.6 * dt);
+          p.life -= dt;
+        }
+        particles = particles.filter((p) => p.life > 0);
+
+        // Ripples (probe firing flash)
+        for (const r of ripples) { r.r += 80 * dt; r.alpha -= 1.8 * dt; }
+        ripples = ripples.filter((r) => r.alpha > 0);
+
+        // Focused-beam shapes (fade out over their duration)
+        for (const b of beams) b.age += dt;
+        beams = beams.filter((b) => b.age < b.duration);
+
+        // Plane waves (super weapon): travel up and cavitate every bubble they cross
+        for (const w of planeWaves) { w.y += w.vy * dt; w.age += dt; }
+        for (const w of planeWaves) {
+          const top = w.y - w.height / 2;
+          const bot = w.y + w.height / 2;
+          for (let j = bubbles.length - 1; j >= 0; j--) {
+            const b = bubbles[j];
+            if (b.cavitating) continue;
+            if (b.y + b.r >= top && b.y - b.r <= bot) {
+              // Intense — short cavitation, no split
+              b.cavitating = true;
+              b.cavTime = 0;
+              b.cavDuration = 0.16;
+              b.splitOnPop = false;
+            }
+          }
+        }
+        planeWaves = planeWaves.filter((w) => w.y + w.height > -20);
+
+        // Spawn / wave progression
+        const now = performance.now();
+        if (now - lastSpawn > spawnInterval) {
+          spawnBubble();
+          lastSpawn = now;
+          spawnInterval = Math.max(280, spawnInterval - 6);
+        }
+        // Promote wave every 1500 points; each promotion grants a pulse charge
+        const targetWave = 1 + Math.floor(score / 1500);
+        if (targetWave > wave) {
+          wave = targetWave;
+          superCharges = Math.min(5, superCharges + 1);
+          updateStats();
+        }
+      }
+
+      function drawBubble(c, cx, cy, r, color, alpha) {
+        if (alpha === undefined) alpha = 1;
+        const [rr, gg, bb] = hexToRgb(color);
+        const light = `rgb(${Math.min(255, rr + 90)},${Math.min(255, gg + 90)},${Math.min(255, bb + 90)})`;
+        const dark = `rgb(${Math.round(rr * 0.45)},${Math.round(gg * 0.45)},${Math.round(bb * 0.45)})`;
+        c.save();
+        c.globalAlpha = alpha;
+        const g = c.createRadialGradient(cx - r * 0.35, cy - r * 0.35, r * 0.05, cx, cy, r);
+        g.addColorStop(0, light);
+        g.addColorStop(0.45, color);
+        g.addColorStop(1, dark);
+        c.fillStyle = g;
+        c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.fill();
+        c.fillStyle = 'rgba(255,255,255,0.55)';
+        c.beginPath(); c.arc(cx - r * 0.35, cy - r * 0.35, r * 0.22, 0, Math.PI * 2); c.fill();
+        c.strokeStyle = 'rgba(255,255,255,0.18)';
+        c.lineWidth = 1;
+        c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.stroke();
+        c.restore();
+      }
+
+      function drawProbe(c, p) {
+        // Body (rounded rect)
+        c.save();
+        c.fillStyle = '#0e3a64';
+        c.strokeStyle = '#1f5d99';
+        c.lineWidth = 1.5;
+        const radius = 6;
+        c.beginPath();
+        c.moveTo(p.x + radius, p.y);
+        c.lineTo(p.x + p.w - radius, p.y);
+        c.quadraticCurveTo(p.x + p.w, p.y, p.x + p.w, p.y + radius);
+        c.lineTo(p.x + p.w, p.y + p.h - radius);
+        c.quadraticCurveTo(p.x + p.w, p.y + p.h, p.x + p.w - radius, p.y + p.h);
+        c.lineTo(p.x + radius, p.y + p.h);
+        c.quadraticCurveTo(p.x, p.y + p.h, p.x, p.y + p.h - radius);
+        c.lineTo(p.x, p.y + radius);
+        c.quadraticCurveTo(p.x, p.y, p.x + radius, p.y);
+        c.closePath();
+        c.fill();
+        c.stroke();
+        // Transducer face (lighter strip on top)
+        c.fillStyle = '#cfd8e3';
+        c.fillRect(p.x + 6, p.y - 3, p.w - 12, 5);
+        // Wave fan above the face (purely visual)
+        c.strokeStyle = 'rgba(144, 224, 239, 0.35)';
+        c.lineWidth = 1;
+        const cx = p.x + p.w / 2, cy = p.y - 3;
+        for (let i = 1; i <= 3; i++) {
+          c.beginPath();
+          c.arc(cx, cy, i * 7, Math.PI, Math.PI * 2);
+          c.stroke();
+        }
+        c.restore();
+      }
+
+      function render() {
+        // Background
+        ctx.fillStyle = '#06070f';
+        ctx.fillRect(0, 0, W, H);
+        // Live vasculature accumulated from microbubble tracks
+        ctx.drawImage(trail, 0, 0);
+
+        // Focused beam shapes — hourglass from probe through focus to far field
+        for (const bm of beams) {
+          const t = bm.age / bm.duration;
+          const a = (1 - t);
+          const cx = bm.x;
+          const yP = bm.yProbe;
+          const yF = bm.yFocus;
+          const wP = 22, wF = 3, wT = 18;
+          // Filled glow
+          const g = ctx.createLinearGradient(0, yP, 0, 0);
+          g.addColorStop(0,         'rgba(144, 224, 239, ' + (0.32 * a) + ')');
+          g.addColorStop(yF / yP,   'rgba(255, 255, 255, ' + (0.55 * a) + ')');
+          g.addColorStop(1,         'rgba(144, 224, 239, ' + (0.08 * a) + ')');
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.moveTo(cx - wP / 2, yP);
+          ctx.lineTo(cx - wF / 2, yF);
+          ctx.lineTo(cx - wT / 2, 0);
+          ctx.lineTo(cx + wT / 2, 0);
+          ctx.lineTo(cx + wF / 2, yF);
+          ctx.lineTo(cx + wP / 2, yP);
+          ctx.closePath();
+          ctx.fill();
+          // Subtle outline
+          ctx.strokeStyle = 'rgba(202, 240, 248, ' + (0.45 * a) + ')';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+          // Tiny bright waist at the focus
+          ctx.fillStyle = 'rgba(255,255,255,' + (0.6 * a) + ')';
+          ctx.beginPath();
+          ctx.arc(cx, yF, 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Bullets (ultrasound pulses): bright cyan with glow halo
+        for (const b of bullets) {
+          const g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r * 5);
+          g.addColorStop(0, 'rgba(144, 224, 239, 0.7)');
+          g.addColorStop(1, 'rgba(144, 224, 239, 0)');
+          ctx.fillStyle = g;
+          ctx.fillRect(b.x - b.r * 5, b.y - b.r * 5, b.r * 10, b.r * 10);
+          ctx.fillStyle = '#caf0f8';
+          ctx.beginPath();
+          ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Bubbles (cavitating ones oscillate with a pulsing acoustic halo)
+        for (const b of bubbles) {
+          if (b.cavitating) {
+            const t = b.cavTime;
+            const wobble = 1 + 0.28 * Math.sin(t * 55);
+            const grow = 1 + (t / b.cavDuration) * 0.35;
+            const rEff = b.r * wobble * grow;
+            drawBubble(ctx, b.x, b.y, rEff, b.color);
+            const flash = 0.5 + 0.5 * Math.sin(t * 45);
+            ctx.save();
+            ctx.globalAlpha = 0.35 + 0.45 * flash;
+            ctx.strokeStyle = '#caf0f8';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(b.x, b.y, rEff + 3, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+          } else {
+            drawBubble(ctx, b.x, b.y, b.r, b.color);
+          }
+        }
+
+        // Particles
+        for (const p of particles) {
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, p.life);
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+
+        // Plane waves — bright cyan band sweeping up the screen
+        for (const w of planeWaves) {
+          const cy = w.y;
+          const h = w.height;
+          const g = ctx.createLinearGradient(0, cy - h, 0, cy + h);
+          g.addColorStop(0, 'rgba(144, 224, 239, 0)');
+          g.addColorStop(0.5, 'rgba(202, 240, 248, 0.95)');
+          g.addColorStop(1, 'rgba(144, 224, 239, 0)');
+          ctx.fillStyle = g;
+          ctx.fillRect(0, cy - h, W, h * 2);
+          // Bright core line
+          ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(W, cy); ctx.stroke();
+          // Faint trailing copy below for motion suggestion
+          ctx.strokeStyle = 'rgba(144, 224, 239, 0.35)';
+          ctx.beginPath(); ctx.moveTo(0, cy + 8); ctx.lineTo(W, cy + 8); ctx.stroke();
+        }
+
+        // Ripples on probe firing
+        for (const r of ripples) {
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, r.alpha);
+          ctx.strokeStyle = '#caf0f8';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(r.x, r.y, r.r, Math.PI, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        drawProbe(ctx, player);
+      }
+
+      function loop(time) {
+        if (gameOver) {
+          render();
+          requestAnimationFrame(loop);
+          return;
+        }
+        if (paused) {
+          render();
+          requestAnimationFrame(loop);
+          return;
+        }
+        if (!lastTime) lastTime = time;
+        const dt = Math.min(0.05, (time - lastTime) / 1000);
+        lastTime = time;
+        tick(dt);
+        render();
+        requestAnimationFrame(loop);
+      }
+
+      function showOverlay(title, sub) {
+        overlayTitle.textContent = title;
+        overlaySub.textContent = sub || '';
+        resumeBtn.textContent = gameOver ? 'Nouvelle partie' : 'Reprendre';
+        overlay.classList.remove('hidden');
+      }
+      function hideOverlay() { overlay.classList.add('hidden'); }
+
+      function newGame() {
+        player = { x: W / 2 - 32, y: H - 48, w: 64, h: 24 };
+        bullets = [];
+        bubbles = [];
+        particles = [];
+        ripples = [];
+        planeWaves = [];
+        beams = [];
+        // Reset the vasculature layer
+        tctx.clearRect(0, 0, W, H);
+        score = 0;
+        lives = 3;
+        wave = 1;
+        superCharges = 3;
+        lastSpawn = performance.now();
+        spawnInterval = 1100;
+        lastShot = 0;
+        lastTime = 0;
+        paused = false;
+        gameOver = false;
+        updateStats();
+        hideOverlay();
+        requestAnimationFrame(loop);
+      }
+
+      document.addEventListener('keydown', (e) => {
+        // Browsers require a user gesture to start the audio context
+        ensureAudio();
+        if (e.code === 'ArrowLeft' || e.code === 'ArrowRight' || e.code === 'Space' || e.code === 'KeyX') {
+          e.preventDefault();
+        }
+        if (gameOver) {
+          if (e.code === 'Enter' || e.code === 'Space') newGame();
+          return;
+        }
+        keys[e.code] = true;
+        if (e.code === 'KeyP') {
+          paused = !paused;
+          if (paused) showOverlay('En pause');
+          else hideOverlay();
+        }
+        if (e.code === 'KeyX' && !paused) firePlaneWave();
+      });
+      document.addEventListener('keyup', (e) => { keys[e.code] = false; });
+
+      restartBtn.addEventListener('click', newGame);
+      resumeBtn.addEventListener('click', () => {
+        if (gameOver) newGame();
+        else { paused = false; hideOverlay(); }
+      });
+
+      newGame();
+    })();
+  </script>
+
+  <style>
+    .game-wrap { max-width: 760px; margin: 0 auto; }
+    h1 {
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 28px;
+      margin-bottom: 0;
+    }
+    h1::after {
+      content: '';
+      display: block;
+      width: 60%;
+      max-width: 280px;
+      height: 3px;
+      background: var(--accent);
+      margin: 8px auto 0;
+    }
+    .tagline {
+      text-align: center;
+      color: var(--muted);
+      margin: 8px 0 24px;
+      font-style: italic;
+    }
+    .game-area {
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .board-wrap {
+      position: relative;
+      width: 480px;
+      height: 640px;
+    }
+    canvas#board {
+      background: #06070f;
+      border-radius: 8px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+      display: block;
+    }
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-width: 160px;
+    }
+    .stat {
+      background: #f6f8fa;
+      padding: 10px 14px;
+      border-radius: 8px;
+    }
+    .stat .label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+    }
+    .stat .value {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--accent-dark);
+    }
+    .btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 10px 14px;
+      font-size: 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 500;
+    }
+    .btn:hover { background: var(--accent-dark); }
+    .btn.ghost { background: transparent; color: var(--accent); border: 1px solid var(--line); }
+    .btn.ghost:hover { background: var(--accent); color: #fff; }
+    .controls { font-size: 13px; color: var(--muted); }
+    .controls summary { cursor: pointer; }
+    .controls ul { padding-left: 18px; margin: 6px 0 0; list-style: none; }
+    .controls li { margin: 4px 0; }
+    .controls kbd {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-bottom-width: 2px;
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-family: ui-monospace, monospace;
+      font-size: 12px;
+      color: var(--ink);
+    }
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(10,10,20,0.72);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+    }
+    .overlay.hidden { display: none; }
+    .overlay-content {
+      background: #fff;
+      padding: 22px 26px;
+      border-radius: 10px;
+      text-align: center;
+      min-width: 220px;
+    }
+    #overlay-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--accent-dark);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    #overlay-sub {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+  </style>
+</Base>

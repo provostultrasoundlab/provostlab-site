@@ -63,7 +63,9 @@ const toggleHref = lang === 'fr' ? mirrorTail : ('fr/' + mirrorTail).replace(/\/
   </head>
   <body>
     <header class="site-header">
-      <a class="brand" href={link(p)}>{t.brand}</a>
+      <a class="brand" href={link(p)} aria-label={t.brand}>
+        <img src={`${base}lab-logo.png`} alt={t.brand} />
+      </a>
       <nav class="site-nav">
         {nav.map((item) => (
           <a
@@ -74,8 +76,8 @@ const toggleHref = lang === 'fr' ? mirrorTail : ('fr/' + mirrorTail).replace(/\/
           </a>
         ))}
         <a class="lang-toggle" href={link(toggleHref)}>{t.toggleLabel}</a>
-        <a href={link('tetris')} target="_blank" rel="noopener">Tetris</a>
-        <a href={link('ulmaga')} target="_blank" rel="noopener">ULMaga</a>
+        <a href={link(p + 'tetris')} target="_blank" rel="noopener">Tetris</a>
+        <a href={link(p + 'ulmaga')} target="_blank" rel="noopener">ULMaga</a>
       </nav>
     </header>
 
@@ -120,11 +122,14 @@ const toggleHref = lang === 'fr' ? mirrorTail : ('fr/' + mirrorTail).replace(/\/
         margin: 0 auto;
       }
       .brand {
-        font-weight: 700;
-        font-size: 18px;
+        display: inline-flex;
+        align-items: center;
         text-decoration: none;
-        color: var(--accent-dark);
-        letter-spacing: -0.01em;
+      }
+      .brand img {
+        display: block;
+        height: 44px;
+        width: auto;
       }
       .site-nav {
         display: flex;
