@@ -23,10 +23,12 @@ import Base from '../layouts/Base.astro';
         <div class="stat"><div class="label">Lives</div><div class="value" id="lives">♥♥♥</div></div>
         <div class="stat"><div class="label">Wave</div><div class="value" id="wave">1</div></div>
         <div class="stat"><div class="label">Pulse</div><div class="value" id="charges">3</div></div>
+        <button id="planewave" class="btn touch-only">⚡ Plane Wave</button>
         <button id="restart" class="btn ghost">New Game</button>
         <details class="controls">
           <summary>Controls</summary>
           <ul>
+            <li class="touch-only">Drag to aim · hold to fire</li>
             <li><kbd>←</kbd> <kbd>→</kbd> or <kbd>A</kbd> <kbd>D</kbd> move</li>
             <li><kbd>Space</kbd> shoot (hold to auto-fire)</li>
             <li><kbd>X</kbd> plane wave (super — pops everything)</li>
@@ -179,6 +181,7 @@ import Base from '../layouts/Base.astro';
 
       const keys = {};
       const PRESS_ONLY = new Set(); // tracks keys whose press already fired single-shot logic
+      let touchFiring = false; // finger held on the board → aim + auto-fire
 
       function spawnBubble() {
         const r = rand(14, 30);
@@ -273,8 +276,8 @@ import Base from '../layouts/Base.astro';
         if (keys.ArrowRight || keys.KeyD) player.x += speed * dt;
         player.x = Math.max(0, Math.min(W - player.w, player.x));
 
-        // Auto-fire while space held
-        if (keys.Space) shoot();
+        // Auto-fire while space held or finger down
+        if (keys.Space || touchFiring) shoot();
 
         // Bullets
         for (const b of bullets) { b.y += b.vy * dt; b.life -= dt; }
@@ -733,6 +736,31 @@ import Base from '../layouts/Base.astro';
       });
       document.addEventListener('keyup', (e) => { keys[e.code] = false; });
 
+      // ── Touch controls: drag to aim the probe, hold to auto-fire ───────────
+      // The board is CSS-scaled on small screens, so map the touch position back
+      // into the canvas's internal 480-wide coordinate system.
+      function aimFromTouch(e) {
+        if (gameOver) { newGame(); return; }
+        ensureAudio();
+        e.preventDefault();
+        const t = e.touches[0];
+        if (!t) return;
+        const rect = board.getBoundingClientRect();
+        const x = (t.clientX - rect.left) * (W / rect.width);
+        player.x = Math.max(0, Math.min(W - player.w, x - player.w / 2));
+        touchFiring = true;
+      }
+      board.addEventListener('touchstart', aimFromTouch, { passive: false });
+      board.addEventListener('touchmove', aimFromTouch, { passive: false });
+      board.addEventListener('touchend', (e) => { e.preventDefault(); touchFiring = false; }, { passive: false });
+      board.addEventListener('touchcancel', () => { touchFiring = false; });
+
+      const planeBtn = document.getElementById('planewave');
+      planeBtn.addEventListener('click', () => {
+        ensureAudio();
+        if (!paused && !gameOver) firePlaneWave();
+      });
+
       restartBtn.addEventListener('click', newGame);
       resumeBtn.addEventListener('click', () => {
         if (gameOver) newGame();
@@ -777,14 +805,20 @@ import Base from '../layouts/Base.astro';
     .board-wrap {
       position: relative;
       width: 480px;
-      height: 640px;
+      max-width: 100%;
+      min-width: 0; /* allow the flex item to shrink below the canvas's 480px intrinsic width */
+      aspect-ratio: 480 / 640;
     }
     canvas#board {
+      width: 100%;
+      height: 100%;
       background: #06070f;
       border-radius: 8px;
       box-shadow: 0 6px 18px rgba(0,0,0,0.18);
       display: block;
+      touch-action: none; /* let drag-to-aim work without the page scrolling */
     }
+    .touch-only { display: none; }
     .sidebar {
       display: flex;
       flex-direction: column;
@@ -864,6 +898,16 @@ import Base from '../layouts/Base.astro';
       font-size: 13px;
       color: var(--muted);
       margin-bottom: 14px;
+    }
+
+    /* Touch devices (and narrow screens) get on-screen controls + a wider board */
+    @media (max-width: 720px), (pointer: coarse) {
+      #planewave.touch-only { display: block; }
+      .controls li.touch-only { display: list-item; }
+    }
+    @media (max-width: 720px) {
+      .board-wrap { width: 100%; }
+      .sidebar { width: 100%; min-width: 0; max-width: 480px; }
     }
   </style>
 </Base>
