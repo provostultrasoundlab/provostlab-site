@@ -66,6 +66,10 @@ const toggleHref = lang === 'fr' ? mirrorTail : ('fr/' + mirrorTail).replace(/\/
       <a class="brand" href={link(p)} aria-label={t.brand}>
         <img src={`${base}lab-logo.png`} alt={t.brand} />
       </a>
+      <input type="checkbox" id="nav-toggle" class="nav-toggle" hidden />
+      <label for="nav-toggle" class="nav-burger" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </label>
       <nav class="site-nav">
         {nav.map((item) => (
           <a
@@ -100,7 +104,8 @@ const toggleHref = lang === 'fr' ? mirrorTail : ('fr/' + mirrorTail).replace(/\/
         --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       }
       * { box-sizing: border-box; }
-      html { scroll-behavior: smooth; }
+      html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+      img, iframe, video { max-width: 100%; }
       body {
         margin: 0;
         font-family: var(--font);
@@ -150,6 +155,16 @@ const toggleHref = lang === 'fr' ? mirrorTail : ('fr/' + mirrorTail).replace(/\/
         padding-left: 16px;
         margin-left: 0;
       }
+      /* Mobile hamburger — hidden on desktop */
+      .nav-burger { display: none; }
+      .nav-burger span {
+        display: block;
+        width: 24px;
+        height: 2px;
+        background: var(--ink);
+        border-radius: 2px;
+        transition: transform 0.2s ease, opacity 0.2s ease;
+      }
       .content {
         max-width: var(--maxw);
         margin: 0 auto;
@@ -163,6 +178,53 @@ const toggleHref = lang === 'fr' ? mirrorTail : ('fr/' + mirrorTail).replace(/\/
         font-size: 13px;
         text-align: center;
         padding: 24px;
+      }
+
+      @media (max-width: 720px) {
+        .site-header {
+          flex-wrap: wrap;
+          padding: 14px 18px;
+        }
+        .nav-burger {
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          gap: 5px;
+          width: 44px;
+          height: 44px;
+          margin: -10px;
+          cursor: pointer;
+        }
+        /* Animate burger into an X when open */
+        .nav-toggle:checked ~ .nav-burger span:nth-child(1) {
+          transform: translateY(7px) rotate(45deg);
+        }
+        .nav-toggle:checked ~ .nav-burger span:nth-child(2) { opacity: 0; }
+        .nav-toggle:checked ~ .nav-burger span:nth-child(3) {
+          transform: translateY(-7px) rotate(-45deg);
+        }
+        .site-nav {
+          order: 3;
+          flex-basis: 100%;
+          flex-direction: column;
+          gap: 0;
+          font-size: 16px;
+          display: none;
+        }
+        .nav-toggle:checked ~ .site-nav { display: flex; }
+        .site-nav a {
+          padding: 12px 2px;
+          border-bottom: 1px solid var(--line);
+        }
+        .site-nav .lang-toggle {
+          border-left: none;
+          padding-left: 2px;
+        }
+        .content {
+          padding: 24px 18px 48px;
+        }
+        .content h1 { font-size: 25px; }
+        .content h2 { font-size: 19px; }
       }
     </style>
   </body>
