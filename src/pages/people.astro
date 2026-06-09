@@ -104,7 +104,7 @@ const alumni = [
   <div class="people-grid">
     {team.map((p) => (
       <div class="person">
-        <img class="avatar" src={`${base}people/${slug(p.name)}.jpg?v=2`} alt={p.name} loading="lazy" />
+        <img class="avatar" src={`${base}people/${slug(p.name)}.jpg?v=2`} alt={p.name} loading="lazy" width="200" height="200" />
         <div class="person-name">{p.name}</div>
         <p class="person-body">{p.body}</p>
       </div>
@@ -115,7 +115,7 @@ const alumni = [
   <div class="people-grid">
     {alumni.map((p) => (
       <div class="person">
-        <img class="avatar" src={`${base}people/${slug(p.name)}.jpg?v=2`} alt={p.name} loading="lazy" />
+        <img class="avatar" src={`${base}people/${slug(p.name)}.jpg?v=2`} alt={p.name} loading="lazy" width="200" height="200" />
         <div class="person-name">{p.name}</div>
         <p class="person-body">{p.body}</p>
       </div>
@@ -131,22 +131,35 @@ const alumni = [
     }
     .people-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 28px 24px;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 24px;
       margin-top: 18px;
     }
-    .person { display: flex; flex-direction: column; }
+    .person {
+      display: flex;
+      flex-direction: column;
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 16px;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .person:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      border-color: var(--accent);
+    }
     .avatar {
       width: 100%;
       aspect-ratio: 1 / 1;
       object-fit: cover;
-      border-radius: 12px;
+      border-radius: 8px;
       background: #eef1f5;
       display: block;
     }
-    .person-name { font-weight: 600; margin-top: 10px; }
+    .person-name { font-weight: 600; margin-top: 12px; }
     .person-body {
-      margin: 4px 0 0;
+      margin: 6px 0 0;
       color: var(--muted);
       font-size: 14px;
       line-height: 1.5;

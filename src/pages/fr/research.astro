@@ -49,7 +49,23 @@ const sections = [
       <div class="topic-grid">
         {sec.items.map((it) => (
           <div class="topic">
-            <img src={fig(it.image)} alt={it.title} loading="lazy" />
+            {it.image.endsWith('.gif') ? (
+              <video
+                autoplay
+                loop
+                muted
+                playsinline
+                preload="none"
+                poster={fig(it.image.replace('.gif', '.webp'))}
+                width="450"
+                height="338"
+              >
+                <source src={fig(it.image.replace('.gif', '.webm'))} type="video/webm" />
+                <source src={fig(it.image.replace('.gif', '.mp4'))} type="video/mp4" />
+              </video>
+            ) : (
+              <img src={fig(it.image)} alt={it.title} loading="lazy" width="450" height="338" />
+            )}
             <h3>{it.title}</h3>
             <p>{it.body}</p>
           </div>
@@ -89,11 +105,14 @@ const sections = [
       gap: 36px 30px;
     }
     .topic { text-align: center; }
-    .topic img {
+    .topic img,
+    .topic video {
       width: 100%;
       height: auto;
       border-radius: 8px;
       display: block;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
     }
     .topic h3 {
       text-transform: uppercase;

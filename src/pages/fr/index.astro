@@ -12,6 +12,16 @@ const img = (n) => {
 
 const news = [
   {
+    date: 'Juin 2026',
+    title: "Nouvelle prépublication : ULMShare — Un jeu de données à grande échelle de microscopie par localisation ultrasonore in vivo pour l'imagerie microvasculaire",
+    headshots: ['brice-rauby', 'nin-ghigo'],
+    body: [
+      "Brice Rauby et Nin Ghigo, premiers auteurs à parts égales, accompagnés de leurs co-auteurs, ont publié ULMShare sur arXiv — le plus grand jeu de données de microscopie par localisation ultrasonore (ULM) in vivo à ce jour.",
+      "ULMShare regroupe 99 acquisitions ULM transcrâniennes du cerveau entier provenant de 61 souris saines, totalisant 30 To de données brutes. Il couvre de multiples procédures expérimentales, protocoles d'injection, sondes ultrasonores et plans d'imagerie, et comprend les données ultrasonores brutes, les métadonnées, les reconstructions, les trajectoires de microbulles et des évaluations visuelles d'experts — une ressource large, standardisée et publiquement accessible pour développer et évaluer les chaînes de traitement ULM.",
+    ],
+    links: [{ label: 'Prépublication (arXiv)', url: 'https://doi.org/10.48550/ARXIV.2606.07851' }],
+  },
+  {
     date: 'Mai 2026',
     title: "Nouvelle prépublication : Correction automatique des aberrations pour l'imagerie ultrasonore fonctionnelle et super-résolue transcrânienne chez les rongeurs et les primates non humains",
     headshot: 'paul-xing',
@@ -302,17 +312,47 @@ const news = [
 <Base lang="fr">
   <h1>Laboratoire d'ultrasons Provost</h1>
 
-  {news.map((e) => (
+  {news.map((e, index) => (
     <article class="news">
       {e.headshot && (
-        <img class="byline-avatar" src={img(e.headshot)} alt="" loading="lazy" />
+        <img
+          class="byline-avatar"
+          src={img(e.headshot)}
+          alt=""
+          loading={index === 0 ? 'eager' : 'lazy'}
+          fetchpriority={index === 0 ? 'high' : undefined}
+          width="64"
+          height="64"
+        />
+      )}
+      {e.headshots && (
+        <div class="byline-avatars">
+          {e.headshots.map((h) => (
+            <img
+              class="byline-avatar"
+              src={img(h)}
+              alt=""
+              loading={index === 0 ? 'eager' : 'lazy'}
+              fetchpriority={index === 0 ? 'high' : undefined}
+              width="64"
+              height="64"
+            />
+          ))}
+        </div>
       )}
       <div class="news-date">{e.date}</div>
       <h2 class="news-title">{e.title}</h2>
       {e.images && (
         <div class="news-media">
           {e.images.map((n) => (
-            <img src={img(n)} alt={e.title} loading="lazy" />
+            <img
+              src={img(n)}
+              alt={e.title}
+              loading={index === 0 ? 'eager' : 'lazy'}
+              fetchpriority={index === 0 ? 'high' : undefined}
+              width="520"
+              height="292"
+            />
           ))}
         </div>
       )}
@@ -348,6 +388,8 @@ const news = [
     .news-media { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; }
     .news-media img { width: 100%; max-width: 520px; height: auto; border-radius: 10px; display: block; }
     .byline-avatar { float: right; width: 64px; height: 64px; border-radius: 50%; object-fit: cover; margin: 6px 0 10px 14px; }
+    .byline-avatars { float: right; display: flex; gap: 8px; margin: 6px 0 10px 14px; }
+    .byline-avatars .byline-avatar { float: none; margin: 0; }
     .embed { position: relative; aspect-ratio: 16 / 9; max-width: 560px; margin-bottom: 14px; }
     .embed iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; border-radius: 10px; }
     .news p { margin: 0 0 10px; }

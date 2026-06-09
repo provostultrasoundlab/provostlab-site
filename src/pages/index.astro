@@ -12,6 +12,16 @@ const img = (n) => {
 
 const news = [
   {
+    date: 'June 2026',
+    title: 'New preprint: ULMShare — A Large-Scale In Vivo Ultrasound Localization Microscopy Dataset for Microvascular Imaging',
+    headshots: ['brice-rauby', 'nin-ghigo'],
+    body: [
+      'Brice Rauby and Nin Ghigo, joint first authors, together with their co-authors, have released ULMShare on arXiv — the largest in vivo ultrasound localization microscopy (ULM) dataset to date.',
+      'ULMShare comprises 99 whole-brain transcranial ULM acquisitions from 61 healthy mice, totalling 30 TB of raw data. It spans multiple experimental procedures, injection protocols, ultrasound probes and imaging planes, and includes raw ultrasonic data, metadata, reconstructions, microbubble trajectories and expert visual assessments — a broad, standardized and publicly available resource for developing and benchmarking ULM processing pipelines.',
+    ],
+    links: [{ label: 'Preprint (arXiv)', url: 'https://doi.org/10.48550/ARXIV.2606.07851' }],
+  },
+  {
     date: 'May 2026',
     title: 'New preprint: Automatic Aberration Correction for Transcranial Functional and Super-Resolution Ultrasound Imaging in Rodents and Nonhuman Primates',
     headshot: 'paul-xing',
@@ -302,17 +312,47 @@ const news = [
 <Base title="Provost Ultrasound Lab">
   <h1>Provost Ultrasound Lab</h1>
 
-  {news.map((e) => (
+  {news.map((e, index) => (
     <article class="news">
       {e.headshot && (
-        <img class="byline-avatar" src={img(e.headshot)} alt="" loading="lazy" />
+        <img
+          class="byline-avatar"
+          src={img(e.headshot)}
+          alt=""
+          loading={index === 0 ? 'eager' : 'lazy'}
+          fetchpriority={index === 0 ? 'high' : undefined}
+          width="64"
+          height="64"
+        />
+      )}
+      {e.headshots && (
+        <div class="byline-avatars">
+          {e.headshots.map((h) => (
+            <img
+              class="byline-avatar"
+              src={img(h)}
+              alt=""
+              loading={index === 0 ? 'eager' : 'lazy'}
+              fetchpriority={index === 0 ? 'high' : undefined}
+              width="64"
+              height="64"
+            />
+          ))}
+        </div>
       )}
       <div class="news-date">{e.date}</div>
       <h2 class="news-title">{e.title}</h2>
       {e.images && (
         <div class="news-media">
           {e.images.map((n) => (
-            <img src={img(n)} alt={e.title} loading="lazy" />
+            <img
+              src={img(n)}
+              alt={e.title}
+              loading={index === 0 ? 'eager' : 'lazy'}
+              fetchpriority={index === 0 ? 'high' : undefined}
+              width="520"
+              height="292"
+            />
           ))}
         </div>
       )}
@@ -379,6 +419,16 @@ const news = [
       border-radius: 50%;
       object-fit: cover;
       margin: 6px 0 10px 14px;
+    }
+    .byline-avatars {
+      float: right;
+      display: flex;
+      gap: 8px;
+      margin: 6px 0 10px 14px;
+    }
+    .byline-avatars .byline-avatar {
+      float: none;
+      margin: 0;
     }
     .embed {
       position: relative;
