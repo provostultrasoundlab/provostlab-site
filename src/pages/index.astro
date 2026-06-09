@@ -15,6 +15,7 @@ const news = [
     date: 'June 2026',
     title: 'New preprint: ULMShare — A Large-Scale In Vivo Ultrasound Localization Microscopy Dataset for Microvascular Imaging',
     headshots: ['brice-rauby', 'nin-ghigo'],
+    clip: { webm: 'research/ulmshare.webm', mp4: 'research/ulmshare.mp4', poster: 'research/ulmshare.webp' },
     body: [
       'Brice Rauby and Nin Ghigo, joint first authors, together with their co-authors, have released ULMShare on arXiv — the largest in vivo ultrasound localization microscopy (ULM) dataset to date.',
       'ULMShare comprises 99 whole-brain transcranial ULM acquisitions from 61 healthy mice, totalling 30 TB of raw data. It spans multiple experimental procedures, injection protocols, ultrasound probes and imaging planes, and includes raw ultrasonic data, metadata, reconstructions, microbubble trajectories and expert visual assessments — a broad, standardized and publicly available resource for developing and benchmarking ULM processing pipelines.',
@@ -356,6 +357,24 @@ const news = [
           ))}
         </div>
       )}
+      {e.clip && (
+        <div class="news-media">
+          <video
+            class="news-clip"
+            autoplay
+            loop
+            muted
+            playsinline
+            preload="auto"
+            poster={`${base}${e.clip.poster}`}
+            width="520"
+            height="390"
+          >
+            <source src={`${base}${e.clip.webm}`} type="video/webm" />
+            <source src={`${base}${e.clip.mp4}`} type="video/mp4" />
+          </video>
+        </div>
+      )}
       {e.video && (
         <div class="embed">
           <iframe
@@ -405,7 +424,8 @@ const news = [
       gap: 12px;
       margin-bottom: 14px;
     }
-    .news-media img {
+    .news-media img,
+    .news-media video {
       width: 100%;
       max-width: 520px;
       height: auto;

@@ -31,6 +31,7 @@ const sections = [
       { image: 'clinical-imaging.gif', title: 'Imagerie clinique', body: "Un avantage important de l'imagerie ultrasonore est que les méthodes développées pour l'imagerie chez les petits animaux sont facilement transposables chez l'humain, souvent en utilisant la même électronique. Lors du passage à la clinique, nous devons adapter nos méthodes ; nous avons développé de nouvelles approches pour améliorer considérablement la qualité d'image dans le cœur humain et pour traverser les crânes plus épais pour l'imagerie cérébrale." },
       { image: 'simulations.gif', title: 'Simulations', body: "Nous développons des cadres de simulation hautement réalistes pour prédire comment le comportement des microbulles dans la microvascularisation affecte des centaines de milliers d'images ultrasonores et comment ces images peuvent être utilisées pour retrouver ledit comportement. De telles simulations impliquent des calculs à grande échelle généralement exécutés sur des architectures massivement parallèles." },
       { image: 'deep-learning.png', title: 'Apprentissage profond', body: "Nous développons des méthodes d'apprentissage profond pour traiter nos images à diverses étapes, de la correction d'aberration à la détection et l'étiquetage des microbulles. Nous avons été pionniers dans l'utilisation de plusieurs composantes novatrices dans ces réseaux, telles que les réseaux creux ou à valeurs complexes." },
+      { image: 'ulmshare.gif', title: 'ULM ouverte et reproductible', body: "Les progrès en microscopie par localisation ultrasonore sont freinés par la rareté de données in vivo volumineuses, standardisées et librement accessibles. Nous avons publié ULMShare — le plus grand jeu de données ULM in vivo à ce jour, avec 99 acquisitions transcrâniennes du cerveau entier provenant de 61 souris — afin que les méthodes de reconstruction puissent être comparées équitablement et développées à partir de données réelles plutôt que de simulations seules.", link: 'https://github.com/provostultrasoundlab/ulmshare' },
     ],
   },
 ];
@@ -51,7 +52,7 @@ const sections = [
           <div class="topic">
             {it.image.endsWith('.gif') ? (
               <video
-                autoplay
+                class="topic-video"
                 loop
                 muted
                 playsinline
@@ -68,6 +69,9 @@ const sections = [
             )}
             <h3>{it.title}</h3>
             <p>{it.body}</p>
+            {it.link && (
+              <p class="topic-link"><a href={it.link} target="_blank" rel="noopener">Code (GitHub)</a></p>
+            )}
           </div>
         ))}
       </div>
@@ -127,8 +131,44 @@ const sections = [
       margin: 0;
       color: var(--ink);
     }
+    .topic .topic-link {
+      text-align: center;
+      margin: 10px 0 0;
+      font-size: 14px;
+    }
+    .topic .topic-link a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .topic .topic-link a:hover { text-decoration: underline; }
     @media (max-width: 640px) {
       .topic-grid { grid-template-columns: 1fr; }
     }
   </style>
+
+  <script>
+    // Play each research clip only while it is on (or near) screen, and pause
+    // it otherwise. With preload="none" this also defers the download until the
+    // clip is about to be needed, so the page stays light on bandwidth.
+    const videos = document.querySelectorAll('video.topic-video');
+    if ('IntersectionObserver' in window) {
+      const io = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            const video = entry.target;
+            if (entry.isIntersecting) {
+              video.play().catch(() => {});
+            } else {
+              video.pause();
+            }
+          }
+        },
+        { rootMargin: '200px 0px', threshold: 0.1 }
+      );
+      videos.forEach((v) => io.observe(v));
+    } else {
+      // No IntersectionObserver: fall back to playing everything.
+      videos.forEach((v) => v.play().catch(() => {}));
+    }
+  </script>
 </Base>
