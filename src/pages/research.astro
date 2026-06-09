@@ -31,6 +31,7 @@ const sections = [
       { image: 'clinical-imaging.gif', title: 'Clinical imaging', body: 'An important advantage of ultrasound imaging is that methods developed for small animal imaging are readily translatable to humans, often using the same electronics. When moving to the clinic, we need to adapt our methods; we have developed new approaches to drastically improve image quality in the human heart and to cross the thicker skulls for brain imaging.' },
       { image: 'simulations.gif', title: 'Simulations', body: 'We are developing highly realistic simulation frameworks to predict how the behavior of microbubbles in the microvasculature affects hundreds of thousands of ultrasound images, and how these images can be used to recover said behavior. Such simulations involve large computations typically run on massively parallel architectures.' },
       { image: 'deep-learning.png', title: 'Deep learning', body: 'We are developing deep learning methods to process our images at various stages, from aberration correction to microbubble detection and labelling. We have been pioneers in using several novel components in these networks, such as sparse or complex-valued networks.' },
+      { image: 'ulmshare.gif', title: 'Open & reproducible ULM', body: 'Progress in ultrasound localization microscopy is limited by the scarcity of large, standardized, openly available in vivo data. We released ULMShare—the largest in vivo ULM dataset to date, with 99 whole-brain transcranial acquisitions from 61 mice—so that reconstruction methods can be benchmarked fairly and built on real data rather than simulation alone.', link: 'https://github.com/provostultrasoundlab/ulmshare' },
     ],
   },
 ];
@@ -49,9 +50,28 @@ const sections = [
       <div class="topic-grid">
         {sec.items.map((it) => (
           <div class="topic">
-            <img src={fig(it.image)} alt={it.title} loading="lazy" />
+            {it.image.endsWith('.gif') ? (
+              <video
+                class="topic-video"
+                loop
+                muted
+                playsinline
+                preload="none"
+                poster={fig(it.image.replace('.gif', '.webp'))}
+                width="450"
+                height="338"
+              >
+                <source src={fig(it.image.replace('.gif', '.webm'))} type="video/webm" />
+                <source src={fig(it.image.replace('.gif', '.mp4'))} type="video/mp4" />
+              </video>
+            ) : (
+              <img src={fig(it.image)} alt={it.title} loading="lazy" width="450" height="338" />
+            )}
             <h3>{it.title}</h3>
             <p>{it.body}</p>
+            {it.link && (
+              <p class="topic-link"><a href={it.link} target="_blank" rel="noopener">Code (GitHub)</a></p>
+            )}
           </div>
         ))}
       </div>
@@ -89,11 +109,14 @@ const sections = [
       gap: 36px 30px;
     }
     .topic { text-align: center; }
-    .topic img {
+    .topic img,
+    .topic video {
       width: 100%;
       height: auto;
       border-radius: 8px;
       display: block;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
     }
     .topic h3 {
       text-transform: uppercase;
@@ -108,8 +131,44 @@ const sections = [
       margin: 0;
       color: var(--ink);
     }
+    .topic .topic-link {
+      text-align: center;
+      margin: 10px 0 0;
+      font-size: 14px;
+    }
+    .topic .topic-link a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .topic .topic-link a:hover { text-decoration: underline; }
     @media (max-width: 640px) {
       .topic-grid { grid-template-columns: 1fr; }
     }
   </style>
+
+  <script>
+    // Play each research clip only while it is on (or near) screen, and pause
+    // it otherwise. With preload="none" this also defers the download until the
+    // clip is about to be needed, so the page stays light on bandwidth.
+    const videos = document.querySelectorAll('video.topic-video');
+    if ('IntersectionObserver' in window) {
+      const io = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            const video = entry.target;
+            if (entry.isIntersecting) {
+              video.play().catch(() => {});
+            } else {
+              video.pause();
+            }
+          }
+        },
+        { rootMargin: '200px 0px', threshold: 0.1 }
+      );
+      videos.forEach((v) => io.observe(v));
+    } else {
+      // No IntersectionObserver: fall back to playing everything.
+      videos.forEach((v) => v.play().catch(() => {}));
+    }
+  </script>
 </Base>

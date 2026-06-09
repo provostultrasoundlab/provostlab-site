@@ -66,11 +66,16 @@ const toggleHref = lang === 'fr' ? mirrorTail : ('fr/' + mirrorTail).replace(/\/
       <a class="brand" href={link(p)} aria-label={t.brand}>
         <img src={`${base}lab-logo.png`} alt={t.brand} />
       </a>
-      <input type="checkbox" id="nav-toggle" class="nav-toggle" hidden />
-      <label for="nav-toggle" class="nav-burger" aria-label="Toggle menu">
+      <button
+        id="menu-toggle"
+        class="nav-burger"
+        aria-label="Toggle menu"
+        aria-expanded="false"
+        aria-controls="site-nav"
+      >
         <span></span><span></span><span></span>
-      </label>
-      <nav class="site-nav">
+      </button>
+      <nav id="site-nav" class="site-nav">
         {nav.map((item) => (
           <a
             href={link(item.href)}
@@ -79,7 +84,14 @@ const toggleHref = lang === 'fr' ? mirrorTail : ('fr/' + mirrorTail).replace(/\/
             {item.label}
           </a>
         ))}
-        <a class="lang-toggle" href={link(toggleHref)}>{t.toggleLabel}</a>
+        <a
+          class="lang-toggle"
+          href={link(toggleHref)}
+          hreflang={lang === 'en' ? 'fr' : 'en'}
+          lang={lang === 'en' ? 'fr' : 'en'}
+        >
+          {t.toggleLabel}
+        </a>
         <a href={link(p + 'tetris')} target="_blank" rel="noopener">Tetris</a>
         <a href={link(p + 'ulmaga')} target="_blank" rel="noopener">ULMaga</a>
       </nav>
@@ -114,15 +126,28 @@ const toggleHref = lang === 'fr' ? mirrorTail : ('fr/' + mirrorTail).replace(/\/
         line-height: 1.6;
         background: #fff;
       }
-      a { color: var(--accent); }
+      a, button {
+        color: var(--accent);
+        transition: color 0.2s cubic-bezier(0.4, 0, 0.2, 1), 
+                    background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), 
+                    border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), 
+                    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                    box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      }
       .site-header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
         display: flex;
         flex-wrap: wrap;
         align-items: center;
         justify-content: space-between;
         gap: 12px;
         padding: 16px 24px;
-        border-bottom: 1px solid var(--line);
+        border-bottom: 1px solid rgba(227, 232, 239, 0.6);
         max-width: var(--maxw);
         margin: 0 auto;
       }
@@ -139,6 +164,7 @@ const toggleHref = lang === 'fr' ? mirrorTail : ('fr/' + mirrorTail).replace(/\/
       .site-nav {
         display: flex;
         flex-wrap: wrap;
+        align-items: center;
         gap: 16px;
         font-size: 14px;
       }
@@ -156,7 +182,13 @@ const toggleHref = lang === 'fr' ? mirrorTail : ('fr/' + mirrorTail).replace(/\/
         margin-left: 0;
       }
       /* Mobile hamburger — hidden on desktop */
-      .nav-burger { display: none; }
+      .nav-burger {
+        display: none;
+        background: none;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+      }
       .nav-burger span {
         display: block;
         width: 24px;
@@ -180,6 +212,38 @@ const toggleHref = lang === 'fr' ? mirrorTail : ('fr/' + mirrorTail).replace(/\/
         padding: 24px;
       }
 
+      /* Dark Mode styling */
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --accent: #3b82f6;
+          --accent-dark: #60a5fa;
+          --ink: #f8fafc;
+          --muted: #94a3b8;
+          --line: #334155;
+        }
+        body {
+          background: #0f172a;
+        }
+        .site-header {
+          background: rgba(15, 23, 42, 0.85);
+          border-bottom: 1px solid rgba(51, 65, 85, 0.6);
+        }
+        img, video {
+          opacity: 0.92;
+          transition: opacity 0.2s ease;
+        }
+        img:hover, video:hover {
+          opacity: 1;
+        }
+        .repo-card, .person {
+          background: #1e293b !important;
+          border-color: #334155 !important;
+        }
+        .repo-card:hover {
+          border-color: var(--accent) !important;
+        }
+      }
+
       @media (max-width: 720px) {
         .site-header {
           flex-wrap: wrap;
@@ -188,6 +252,7 @@ const toggleHref = lang === 'fr' ? mirrorTail : ('fr/' + mirrorTail).replace(/\/
         .nav-burger {
           display: flex;
           flex-direction: column;
+          align-items: center;
           justify-content: center;
           gap: 5px;
           width: 44px;
@@ -196,11 +261,11 @@ const toggleHref = lang === 'fr' ? mirrorTail : ('fr/' + mirrorTail).replace(/\/
           cursor: pointer;
         }
         /* Animate burger into an X when open */
-        .nav-toggle:checked ~ .nav-burger span:nth-child(1) {
+        .nav-burger[aria-expanded="true"] span:nth-child(1) {
           transform: translateY(7px) rotate(45deg);
         }
-        .nav-toggle:checked ~ .nav-burger span:nth-child(2) { opacity: 0; }
-        .nav-toggle:checked ~ .nav-burger span:nth-child(3) {
+        .nav-burger[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
+        .nav-burger[aria-expanded="true"] span:nth-child(3) {
           transform: translateY(-7px) rotate(-45deg);
         }
         .site-nav {
@@ -211,10 +276,11 @@ const toggleHref = lang === 'fr' ? mirrorTail : ('fr/' + mirrorTail).replace(/\/
           font-size: 16px;
           display: none;
         }
-        .nav-toggle:checked ~ .site-nav { display: flex; }
+        .site-nav.open { display: flex; }
         .site-nav a {
           padding: 12px 2px;
           border-bottom: 1px solid var(--line);
+          width: 100%;
         }
         .site-nav .lang-toggle {
           border-left: none;
@@ -227,5 +293,16 @@ const toggleHref = lang === 'fr' ? mirrorTail : ('fr/' + mirrorTail).replace(/\/
         .content h2 { font-size: 19px; }
       }
     </style>
+    <script is:inline>
+      const toggle = document.getElementById('menu-toggle');
+      const nav = document.getElementById('site-nav');
+      if (toggle && nav) {
+        toggle.addEventListener('click', () => {
+          const expanded = toggle.getAttribute('aria-expanded') === 'true';
+          toggle.setAttribute('aria-expanded', !expanded);
+          nav.classList.toggle('open');
+        });
+      }
+    </script>
   </body>
 </html>
