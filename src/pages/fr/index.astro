@@ -12,6 +12,72 @@ const img = (n) => {
 
 const news = [
   {
+    date: '24 septembre 2026',
+    title: "Six articles à l'IEEE IUS 2026 : à bientôt à Raleigh !",
+    body: [
+      "Le laboratoire s'envole vers Raleigh, en Caroline du Nord, pour l'IEEE International Ultrasonics Symposium, du 4 au 8 octobre ! Nous y présenterons six articles, cinq présentations orales et une affiche, de l'imagerie du cerveau à travers le crâne jusqu'à la microcirculation du cœur humain.",
+      "Félicitations à Alice Wu, l'une des 18 finalistes du concours du meilleur article étudiant (Student Paper Competition) ! Ne manquez pas son affiche lundi et sa présentation mardi.",
+    ],
+    program: [
+      {
+        kind: 'Présentation orale',
+        when: 'lundi 5 octobre, 11 h – 12 h 30',
+        room: 'salle 306 A',
+        title: 'Transcranial Blood–Brain Barrier Opening with Real-Time, High-Resolution Ultrasound–Guidance Using a Diagnostic Probe',
+        authors: 'Oleksandra Gulenko, Elahe Memari, Stephen A. Lee, Jonathan Porée, Gerardo Ramos-Palacios, Louis Caron, Vladimir Rymar, Abbas Sadikot, Jean Provost',
+        note: 'Séance A2L-09, MTN: Neuromodulation and Brain Theranostics.',
+      },
+      {
+        kind: 'Affiche',
+        when: 'lundi 5 octobre, 15 h 30 – 16 h 30',
+        room: 'Exhibit Hall B/C',
+        title: 'Speed of Sound Aberration Correction for transcranial Dynamic Ultrasound Localization Microscopy Using a Row-Column Array',
+        authors: 'Alice Wu, Jonathan Porée, Gerardo Ramos-Palacios, Stephen A. Lee, Ludovic Goetz, Abbas Sadikot, Michaël Chassé, Jean Provost',
+        note: "Séance d'affiches des finalistes du Student Paper Competition.",
+      },
+      {
+        kind: 'Présentation orale',
+        when: 'lundi 5 octobre, 16 h 30 – 18 h',
+        room: 'salle 302 C',
+        title: 'Physiologically Annotated Single Capillary Reporters Ultrasound Localization Microscopy Maps',
+        authors: 'Malo Rosetto, Nin Ghigo, Stephen A. Lee, Jonathan Porée, Jean Provost',
+        note: 'Séance A5L-04, MSR: Microcorticality.',
+      },
+      {
+        kind: 'Présentation orale',
+        when: 'mardi 6 octobre, 11 h – 12 h 30',
+        room: 'salle 301 A/B',
+        title: 'Speed of Sound Aberration Correction for transcranial Dynamic Ultrasound Localization Microscopy Using a Row-Column Array',
+        authors: 'Alice Wu, Jonathan Porée, Gerardo Ramos-Palacios, Stephen A. Lee, Ludovic Goetz, Abbas Sadikot, Michaël Chassé, Jean Provost',
+        note: 'Séance B3L-02, MIM: Transcranial Ultrasound for Functional and Microvascular Brain Imaging.',
+      },
+      {
+        kind: 'Affiche',
+        when: 'mardi 6 octobre, 15 h 30 – 16 h 30',
+        room: 'Exhibit Hall B/C',
+        title: 'Transthoracic Ultrafast Ultrasound Localization Microscopy of the Human Coronary Microcirculation Over the Entire Cardiac Cycle',
+        authors: 'Alexis Leconte, Jonathan Porée, Michael Mougharbel, Alice Wu, Stephen A. Lee, Jean-Claude Tardif, Jean Provost',
+        note: "Séance d'affiches B5P-20, MSR: Contrast and Compare.",
+      },
+      {
+        kind: 'Présentation orale',
+        when: 'mercredi 7 octobre, 16 h 30 – 18 h',
+        room: 'salle 302 C',
+        title: 'Sequence Optimization for continuous, High Frame rate, and Long Data Acquisitions on a Verasonics Platform',
+        authors: 'Matthew Lowerison, YiRang Shin, Miguel Bernal, Bryan Cunitz, Jonathan Porée, Ron Daigle, Jean Provost, Pengfei Song',
+        note: 'Séance C6L-04, MSR: Counting the Minutes.',
+      },
+      {
+        kind: 'Présentation orale',
+        when: 'mercredi 7 octobre, 16 h 30 – 18 h',
+        room: 'salle 302 C',
+        title: 'Matrix Whitening for Parameter-Less Clutter Suppression in Single Capillary Ultrasound Localization Microscopy',
+        authors: 'Stephen A. Lee, Isidora Jelenkovic, Maia Kokoeva, Jean Provost',
+        note: 'Séance C6L-04, MSR: Counting the Minutes.',
+      },
+    ],
+  },
+  {
     date: '17 juin 2026',
     title: 'Félicitations à Paul Xing, Ph.D. !',
     headshot: 'paul-xing',
@@ -399,6 +465,18 @@ const news = [
         </div>
       )}
       {e.body.map((p) => <p>{p}</p>)}
+      {e.program && (
+        <ul class="news-program">
+          {e.program.map((t) => (
+            <li>
+              <div class="program-when"><strong>{t.kind}</strong> · {t.when} · {t.room}</div>
+              <div class="program-title">{t.title}</div>
+              <div class="program-authors">{t.authors}</div>
+              <div class="program-note">{t.note}</div>
+            </li>
+          ))}
+        </ul>
+      )}
       {e.links && (
         <ul class="news-links">
           {e.links.map((l) => (
@@ -425,5 +503,12 @@ const news = [
     .news-links { margin: 8px 0 0; padding-left: 18px; }
     .news-links li { margin: 2px 0; }
     .news-links a { font-size: 14px; }
+    .news-program { list-style: none; margin: 14px 0 0; padding: 0; }
+    .news-program li { margin: 0 0 14px; padding-left: 12px; border-left: 3px solid var(--line); }
+    .program-when { font-size: 13px; color: var(--muted); }
+    .program-when strong { color: var(--accent); }
+    .program-title { font-weight: 600; margin: 2px 0; }
+    .program-authors, .program-note { font-size: 14px; }
+    .program-note { color: var(--muted); }
   </style>
 </Base>
