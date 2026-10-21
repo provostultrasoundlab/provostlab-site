@@ -24,7 +24,7 @@ const linkify = (s) =>
       <h3 class="year-header">{group.year}</h3>
       {group.items.map((it) => (
         <article class="pub">
-          <a class="pub-title" href={`${base}${it.pdf}`} target="_blank" rel="noopener">{it.title}</a>
+          <a class="pub-title" href={it.pdf ? `${base}${it.pdf}` : it.url} target="_blank" rel="noopener">{it.title}</a>
           <p class="pub-cite" set:html={linkify(it.citation)} />
         </article>
       ))}

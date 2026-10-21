@@ -43,6 +43,8 @@ Drive folder + Apps Script widget are no longer used.
    Notes on the fields:
    - **`title`** — paper title, no formatting.
    - **`pdf`** — relative path under `public/`, almost always `papers/<filename>.pdf`.
+   - **`url`** — use instead of `pdf` when the site has no PDF of the paper.
+     The title then opens this link, usually `https://doi.org/...` or the arXiv page.
    - **`citation`** — full APA citation. Use `|-` (literal block) so
      it can span multiple lines. `<i>...</i>` italic tags and `&amp;`
      entities are rendered as HTML. Any `https://...` URL in the
@@ -57,7 +59,8 @@ Drive folder + Apps Script widget are no longer used.
    This re-fetches the canonical APA from `doi.org` for every entry
    whose citation contains a DOI link. Use it if you only have a DOI
    and want the citation auto-formatted, or to refresh after a journal
-   updates volume / pages.
+   updates volume / pages. It overwrites citations that were corrected
+   by hand, so check `git diff` before committing.
 
 4. **Commit and push.**
    ```bash

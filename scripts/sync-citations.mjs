@@ -20,7 +20,8 @@ async function apa(doi) {
     headers: { Accept: 'text/x-bibliography; style=apa' },
   });
   if (!r.ok) return null;
-  return (await r.text()).trim();
+  // doi.org title-cases journal names into "&Amp;", which browsers show as-is.
+  return (await r.text()).trim().replace(/&Amp;/g, '&amp;');
 }
 
 let updated = 0, skipped = 0, missing = 0;
