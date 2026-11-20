@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="referrer" content="no-referrer">
+<title>Shared presentation</title>
+<style>
+html,body,iframe{width:100%;height:100%;margin:0;border:0}
+body{background:white;color:#263a46;font:16px system-ui,sans-serif}
+main{padding:1.3rem}main[hidden]{display:none!important}p{margin:0}iframe{display:block}
+</style>
+</head>
+<body>
+<main><p id="status" role="status">Opening shared presentation…</p></main>
+<script>
+(async () => {
+  'use strict';
+  const status = document.getElementById('status');
+  const keyText = location.hash.slice(1);
+  if (!/^[0-9a-f]{64}$/i.test(keyText)) {
+    status.textContent = 'Open this page with the complete link from the presenter.';
+    return;
+  }
+  const inPowerPoint = new URLSearchParams(location.search).get('office') === '1';
+  if (inPowerPoint) {
+    const office = document.createElement('script');
+    office.src = 'https://appsforoffice.microsoft.com/lib/1/hosted/office.js';
+    office.onload = () => { if (window.Office) window.Office.onReady(() => {}); };
+    document.head.append(office);
+  }
+  try {
+    const response = await fetch('./content.bin?v=7239550084f1', {
+      cache: 'no-cache', credentials: 'omit', referrerPolicy: 'no-referrer'
+    });
+    if (!response.ok) throw Error('Share unavailable');
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    const keyBytes = Uint8Array.from(keyText.match(/../g), pair => parseInt(pair, 16));
+    const key = await crypto.subtle.importKey('raw', keyBytes, 'AES-GCM', false, ['decrypt']);
+    const plaintext = await crypto.subtle.decrypt({name:'AES-GCM', iv:bytes.slice(0,12)}, key, bytes.slice(12));
+    const widget = JSON.parse(new TextDecoder().decode(plaintext));
+    let html = widget.html.replace('<head>', '<head><meta name="referrer" content="no-referrer"><meta name="robots" content="noindex,nofollow,noarchive">');
+    if (inPowerPoint) {
+      html = html.replace('<html ', '<html data-office-slide="true" ')
+        .replace('</head>', () => '<style>' + widget.slideCss + '</style></head>');
+      if (widget.startTab) {
+        html = html.replace('</body>', () => '<script>document.getElementById(' + JSON.stringify(widget.startTab) + ').click();<\/script></body>');
+      }
+    }
+    const frame = document.createElement('iframe');
+    frame.title = widget.title;
+    frame.setAttribute('sandbox', 'allow-scripts allow-popups allow-popups-to-escape-sandbox');
+    frame.setAttribute('referrerpolicy', 'no-referrer');
+    frame.srcdoc = html;
+    document.title = widget.title;
+    status.parentElement.hidden = true;
+    document.body.append(frame);
+  } catch {
+    status.textContent = 'Unable to open the widget. Check your connection and use the complete link from the presenter.';
+  }
+})();
+</script>
+</body></html>
