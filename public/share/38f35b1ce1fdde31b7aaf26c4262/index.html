@@ -105,32 +105,56 @@ main{padding:1.3rem}main[hidden]{display:none!important}p{margin:0}iframe{displa
     } catch { if (ticket === generation) errorMessage(); }
   }
 
-  function documentSettingsReady() {
-    let settings;
-    try { settings = window.Office.context.document.settings; } catch { return; }
-    if (!settings || typeof settings.get !== 'function') return;
-    function choose() {
-      try {
-        const target = readTarget(settings.get(settingName));
-        if (target) { openDocumentWidget(target); return true; }
-      } catch { /* The aperture remains available if the Office bridge is unavailable. */ }
-      return false;
-    }
-    if (!choose() && typeof settings.refreshAsync === 'function') {
-      try { settings.refreshAsync(result => { if (result && result.status === 'succeeded') choose(); }); }
-      catch { /* A refresh is optional when no setting was found. */ }
-    }
+  if (!embedded) {
+    openAperture();
+    return;
   }
 
-  openAperture();
-  if (embedded) {
-    const office = document.createElement('script');
-    office.src = 'https://appsforoffice.microsoft.com/lib/1/hosted/office.js';
-    office.onload = () => {
-      if (window.Office && typeof window.Office.onReady === 'function') window.Office.onReady(documentSettingsReady);
-    };
-    document.head.append(office);
+  // Keep the first frame available for PowerPoint's snapshot pointed at the chosen widget.
+  // A browser with no Office bridge still gets the aperture after a bounded wait.
+  let apertureStarted = false;
+  const deadline = setTimeout(showDefault, 8000);
+  function showDefault() {
+    clearTimeout(deadline);
+    if (generation || apertureStarted) return;
+    apertureStarted = true;
+    openAperture();
   }
+  function select(value) {
+    const target = readTarget(value);
+    if (!target) { showDefault(); return; }
+    clearTimeout(deadline);
+    openDocumentWidget(target);
+  }
+  function documentSettingsReady() {
+    try {
+      const settings = window.Office.context.document.settings;
+      const value = settings.get(settingName);
+      if (value !== undefined && value !== null) {
+        select(value);
+        return;
+      }
+      if (typeof settings.refreshAsync !== 'function') {
+        showDefault();
+        return;
+      }
+      settings.refreshAsync(result => {
+        try {
+          if (result && result.status === 'succeeded') select(settings.get(settingName));
+          else showDefault();
+        } catch { showDefault(); }
+      });
+    } catch { showDefault(); }
+  }
+
+  const office = document.createElement('script');
+  office.src = 'https://appsforoffice.microsoft.com/lib/1/hosted/office.js';
+  office.onerror = showDefault;
+  office.onload = () => {
+    try { Promise.resolve(window.Office.onReady(documentSettingsReady)).catch(showDefault); }
+    catch { showDefault(); }
+  };
+  document.head.append(office);
 })();
 </script>
 </body></html>
