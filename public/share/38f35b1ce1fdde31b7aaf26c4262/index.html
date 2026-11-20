@@ -6,46 +6,131 @@
 <meta name="robots" content="noindex,nofollow,noarchive">
 <meta name="referrer" content="no-referrer">
 <title>Shared presentation</title>
-<style>html,body,iframe{width:100%;height:100%;margin:0;border:0}body{background:white;color:#263a46;font:16px system-ui,sans-serif}main{padding:1.3rem}p{margin:0}iframe{display:block}</style>
-</head><body><main><p id="status" role="status">Opening shared presentation…</p></main>
+<style>
+html,body,iframe{width:100%;height:100%;margin:0;border:0}
+body{background:white;color:#263a46;font:16px system-ui,sans-serif}
+main{padding:1.3rem}main[hidden]{display:none!important}p{margin:0}iframe{display:block}
+</style>
+</head>
+<body>
+<main><p id="status" role="status">Opening shared presentation…</p></main>
 <script>
-(async()=>{
+(() => {
   'use strict';
-  const status=document.getElementById('status');
-  const keyText=location.hash.slice(1);
-  if (!/^[0-9a-f]{64}$/i.test(keyText)) {
-    status.textContent='Open this page with the complete link from the presenter.';return;
+  const status = document.getElementById('status');
+  const apertureKey = location.hash.slice(1);
+  if (!/^[0-9a-f]{64}$/i.test(apertureKey)) {
+    status.textContent = 'Open this page with the complete link from the presenter.';
+    return;
   }
-  const params=new URLSearchParams(location.search);
-  const embedded=params.get('office')==='1';
-  if(embedded) {
-    const office=document.createElement('script');
-    office.src='https://appsforoffice.microsoft.com/lib/1/hosted/office.js';
-    office.onload=()=>{if(window.Office)window.Office.onReady(()=>{});};
+  const params = new URLSearchParams(location.search);
+  const embedded = params.get('office') === '1';
+  const officeOrigin = 'https://provostlab.polymtl.ca';
+  const settingName = 'ProvostLab.WidgetUrl';
+  let generation = 0;
+  let contentFrame;
+
+  function readTarget(value) {
+    if (typeof value !== 'string') return null;
+    // PowerPoint deserializes persisted strings. Accept their JSON representation too.
+    if (value.startsWith('"')) {
+      try { value = JSON.parse(value); } catch { return null; }
+    }
+    if (typeof value !== 'string' || !/^https:\/\/provostlab\.polymtl\.ca\/share\/[a-f0-9]{28}\/\?office=1#[a-f0-9]{64}$/i.test(value)) return null;
+    const target = new URL(value);
+    if (target.origin !== officeOrigin || location.origin !== officeOrigin || target.pathname === location.pathname) return null;
+    return target;
+  }
+
+  async function readBundle(address, keyHex) {
+    const response = await fetch(address, {cache:'no-cache', credentials:'omit', referrerPolicy:'no-referrer', redirect:'error'});
+    if (!response.ok) throw Error('Unavailable');
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    const rawKey = Uint8Array.from(keyHex.match(/../g), pair => parseInt(pair, 16));
+    const key = await crypto.subtle.importKey('raw', rawKey, 'AES-GCM', false, ['decrypt']);
+    const clear = await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(0,12)},key,bytes.slice(12));
+    return JSON.parse(new TextDecoder().decode(clear));
+  }
+
+  function display(html, title) {
+    const frame = document.createElement('iframe');
+    frame.title = title;
+    frame.setAttribute('sandbox','allow-scripts allow-popups allow-popups-to-escape-sandbox');
+    frame.setAttribute('referrerpolicy','no-referrer');
+    frame.srcdoc = html.replace('<head>', '<head><meta name="robots" content="noindex,nofollow,noarchive"><meta name="referrer" content="no-referrer">');
+    document.title = title;
+    status.parentElement.hidden = true;
+    if (contentFrame) contentFrame.replaceWith(frame);
+    else document.body.append(frame);
+    contentFrame = frame;
+  }
+
+  function errorMessage() {
+    if (contentFrame) contentFrame.remove();
+    contentFrame = null;
+    status.parentElement.hidden = false;
+    status.textContent = 'Unable to open the widget. Check your connection and use the complete link from the presenter.';
+  }
+
+  async function openAperture() {
+    try {
+      const bundle = await readBundle('./content.bin?revision=2', apertureKey);
+      if (generation) return;
+      let html = bundle.html;
+      const example = params.get('example');
+      if (['dense','tx','rx','both'].includes(example)) {
+        html = html.replace("new URLSearchParams(location.search).get('example')", JSON.stringify(example));
+      }
+      if (embedded) {
+        html = html.replace('</head>', () => '<style>'+bundle.compactCss+'</style></head>')
+          .replace('</body>', () => '<script>'+bundle.compactJs+'<\/script></body>');
+      }
+      display(html, 'Aperture, resolution and contrast');
+    } catch { if (!generation) errorMessage(); }
+  }
+
+  async function openDocumentWidget(target) {
+    const ticket = ++generation;
+    // The fragment is never part of a network address.
+    try {
+      const bundle = await readBundle(new URL('content.bin', target), target.hash.slice(1));
+      if (ticket !== generation) return;
+      if (typeof bundle.html !== 'string' || typeof bundle.slideCss !== 'string' || typeof bundle.title !== 'string') throw Error('Unavailable');
+      let html = bundle.html.replace('<html ', '<html data-office-slide="true" ')
+        .replace('</head>', () => '<style>'+bundle.slideCss+'</style></head>');
+      if (bundle.startTab) {
+        html = html.replace('</body>', () => '<script>document.getElementById('+JSON.stringify(bundle.startTab)+').click();<\/script></body>');
+      }
+      display(html, bundle.title);
+    } catch { if (ticket === generation) errorMessage(); }
+  }
+
+  function documentSettingsReady() {
+    let settings;
+    try { settings = window.Office.context.document.settings; } catch { return; }
+    if (!settings || typeof settings.get !== 'function') return;
+    function choose() {
+      try {
+        const target = readTarget(settings.get(settingName));
+        if (target) { openDocumentWidget(target); return true; }
+      } catch { /* The aperture remains available if the Office bridge is unavailable. */ }
+      return false;
+    }
+    if (!choose() && typeof settings.refreshAsync === 'function') {
+      try { settings.refreshAsync(result => { if (result && result.status === 'succeeded') choose(); }); }
+      catch { /* A refresh is optional when no setting was found. */ }
+    }
+  }
+
+  openAperture();
+  if (embedded) {
+    const office = document.createElement('script');
+    office.src = 'https://appsforoffice.microsoft.com/lib/1/hosted/office.js';
+    office.onload = () => {
+      if (window.Office && typeof window.Office.onReady === 'function') window.Office.onReady(documentSettingsReady);
+    };
     document.head.append(office);
   }
-  try {
-    const response=await fetch('./content.bin?revision=2',{cache:'no-cache',credentials:'omit',referrerPolicy:'no-referrer'});
-    if(!response.ok)throw Error('Unavailable');
-    const bytes=new Uint8Array(await response.arrayBuffer());
-    const rawKey=Uint8Array.from(keyText.match(/../g),v=>parseInt(v,16));
-    const key=await crypto.subtle.importKey('raw',rawKey,'AES-GCM',false,['decrypt']);
-    const decrypted=await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(0,12)},key,bytes.slice(12));
-    const bundle=JSON.parse(new TextDecoder().decode(decrypted));
-    const allowed=['dense','tx','rx','both'],example=params.get('example');
-    let html=bundle.html.replace('<head>', '<head><meta name="robots" content="noindex,nofollow,noarchive"><meta name="referrer" content="no-referrer">');
-    if(allowed.includes(example)) html=html.replace("new URLSearchParams(location.search).get('example')",JSON.stringify(example));
-    if(embedded) html=html.replace('</head>','<style>'+bundle.compactCss+'</style></head>').replace('</body>','<script>'+bundle.compactJs+'<\/script></body>');
-    const frame=document.createElement('iframe');
-    frame.title='Aperture, resolution and contrast';
-    frame.setAttribute('referrerpolicy','no-referrer');
-    frame.setAttribute('sandbox','allow-scripts allow-popups allow-popups-to-escape-sandbox');
-    frame.srcdoc=html;
-    document.title=frame.title;
-    document.body.append(frame);
-    status.parentElement.hidden=true;
-  } catch {
-    status.textContent='Unable to open the widget. Check your connection and use the complete link from the presenter.';
-  }
 })();
-</script></body></html>
+</script>
+</body></html>
