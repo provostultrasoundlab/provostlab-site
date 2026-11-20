@@ -29,6 +29,7 @@ main{padding:1.3rem}main[hidden]{display:none!important}p{margin:0}iframe{displa
   const settingName = 'ProvostLab.WidgetUrl';
   let generation = 0;
   let contentFrame;
+  let defaultDisplayed = false;
 
   function readTarget(value) {
     if (typeof value !== 'string') return null;
@@ -72,20 +73,22 @@ main{padding:1.3rem}main[hidden]{display:none!important}p{margin:0}iframe{displa
     status.textContent = 'Unable to open the widget. Check your connection and use the complete link from the presenter.';
   }
 
-  async function openAperture() {
+  async function openAperture(bundlePromise) {
     try {
-      const bundle = await readBundle('./content.bin?revision=2', apertureKey);
-      if (generation) return;
+      const bundle = await bundlePromise;
+      if (generation || defaultDisplayed) return;
       let html = bundle.html;
       const example = params.get('example');
       if (['dense','tx','rx','both'].includes(example)) {
         html = html.replace("new URLSearchParams(location.search).get('example')", JSON.stringify(example));
       }
       if (embedded) {
-        html = html.replace('</head>', () => '<style>'+bundle.compactCss+'</style></head>')
+        html = html.replace(/<html\b/i, '<html data-office-slide')
+          .replace('</head>', () => '<style>'+bundle.compactCss+'</style></head>')
           .replace('</body>', () => '<script>'+bundle.compactJs+'<\/script></body>');
       }
       display(html, 'Aperture, resolution and contrast');
+      defaultDisplayed = true;
     } catch { if (!generation) errorMessage(); }
   }
 
@@ -105,54 +108,36 @@ main{padding:1.3rem}main[hidden]{display:none!important}p{margin:0}iframe{displa
     } catch { if (ticket === generation) errorMessage(); }
   }
 
-  if (!embedded) {
-    openAperture();
-    return;
-  }
+  // PowerPoint uses an empty settings collection for the aperture slide.
+  // Start its encrypted request immediately. Network completion can paint it
+  // even while the Office bridge, animation frames or window timers are paused.
+  const defaultBundle = readBundle('./content.bin?revision=de0f1183878a1309', apertureKey);
+  openAperture(defaultBundle);
+  if (!embedded) return;
 
-  // Keep the first frame available for PowerPoint's snapshot pointed at the chosen widget.
-  // A browser with no Office bridge still gets the aperture after a bounded wait.
-  let apertureStarted = false;
-  const deadline = setTimeout(showDefault, 8000);
-  function showDefault() {
-    clearTimeout(deadline);
-    if (generation || apertureStarted) return;
-    apertureStarted = true;
-    openAperture();
-  }
   function select(value) {
     const target = readTarget(value);
-    if (!target) { showDefault(); return; }
-    clearTimeout(deadline);
-    openDocumentWidget(target);
+    if (target) openDocumentWidget(target);
   }
   function documentSettingsReady() {
     try {
       const settings = window.Office.context.document.settings;
-      const value = settings.get(settingName);
-      if (value !== undefined && value !== null) {
-        select(value);
-        return;
-      }
-      if (typeof settings.refreshAsync !== 'function') {
-        showDefault();
-        return;
-      }
+      const current = settings.get(settingName);
+      if (current != null) { select(current); return; }
+      if (typeof settings.refreshAsync !== 'function') return;
       settings.refreshAsync(result => {
         try {
           if (result && result.status === 'succeeded') select(settings.get(settingName));
-          else showDefault();
-        } catch { showDefault(); }
+        } catch { /* The default widget is already opening. */ }
       });
-    } catch { showDefault(); }
+    } catch { /* The default widget is already opening. */ }
   }
 
   const office = document.createElement('script');
   office.src = 'https://appsforoffice.microsoft.com/lib/1/hosted/office.js';
-  office.onerror = showDefault;
   office.onload = () => {
-    try { Promise.resolve(window.Office.onReady(documentSettingsReady)).catch(showDefault); }
-    catch { showDefault(); }
+    try { Promise.resolve(window.Office.onReady(documentSettingsReady)).catch(() => {}); }
+    catch { /* PowerPoint can still run the aperture without Office.js. */ }
   };
   document.head.append(office);
 })();
