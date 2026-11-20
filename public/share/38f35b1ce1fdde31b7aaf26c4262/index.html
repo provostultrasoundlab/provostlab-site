@@ -36,7 +36,7 @@ main{padding:1.3rem}main[hidden]{display:none!important}p{margin:0}iframe{displa
     if (value.startsWith('"')) {
       try { value = JSON.parse(value); } catch { return null; }
     }
-    if (typeof value !== 'string' || !/^https:\/\/provostlab\.polymtl\.ca\/share\/[a-f0-9]{28}\/\?office=1#[a-f0-9]{64}$/i.test(value)) return null;
+    if (typeof value !== 'string' || !/^https:\/\/provostlab\.polymtl\.ca\/share\/[a-fA-F0-9]{28}\/\?office=1#[a-fA-F0-9]{64}$/.test(value)) return null;
     const target = new URL(value);
     if (target.origin !== officeOrigin || location.origin !== officeOrigin || target.pathname === location.pathname) return null;
     return target;
